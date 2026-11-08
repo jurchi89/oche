@@ -81,7 +81,7 @@ body.ingame:not(.mine) .pc .big{font-size:40px}
 </style>
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 01:55</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:05</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -159,7 +159,7 @@ function openConn(){
   if(conn){try{conn.close()}catch(e){}}
   conn=peer.connect('oche-dart-'+CODE,{reliable:true});const my=conn;
   const to=setTimeout(()=>{if(my.open)return;if(!everOpen){$('#jmsg').textContent='Geen verbinding. Klopt de code, en staat Oche bij je maat nog open?';$('#go').disabled=false;chip('bad','Niet verbonden')}else scheduleRetry()},12000);
-  my.on('open',()=>{clearTimeout(to);everOpen=true;retry=0;lastSeen=Date.now();my.send({t:'hello',name:myName});chip('ok','Verbonden');$('#join').hidden=true;$('#play').hidden=false;
+  my.on('open',()=>{clearTimeout(to);everOpen=true;retry=0;lastSeen=Date.now();my.send({t:'hello',name:myName,cam:!!local});chip('ok','Verbonden');$('#join').hidden=true;$('#play').hidden=false;
     if(local)peer.call('oche-dart-'+CODE,local);keepAwake()});
   my.on('data',m=>{lastSeen=Date.now();onMsg(m)});
   my.on('close',()=>{if(my===conn)scheduleRetry()});
