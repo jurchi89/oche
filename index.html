@@ -730,10 +730,11 @@ function say(t){if(!DB.set.voice||!window.speechSynthesis)return;try{speechSynth
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
+const APPV='0245';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
-function guestLink(){const base=DB.set.guestUrl||(location.protocol==='https:'?location.href.split('#')[0].replace(/[^/]*$/,'')+'oche-gast.html':'https://jurchi89.github.io/oche/oche-gast.html');return base?base+'#'+ONLINE.code:''}
+function guestLink(){const base=DB.set.guestUrl||(location.protocol==='https:'?location.href.split('#')[0].split('?')[0].replace(/[^/]*$/,'')+'oche-gast.html':'https://jurchi89.github.io/oche/oche-gast.html');return base?base+'?v='+APPV+'#'+ONLINE.code:''}
 function onlineSetupHTML(){
   if(!ONLINE.peer)return `<div class="small muted">Je maat speelt mee vanaf zijn telefoon: zijn camera filmt zijn bord en hij tikt zijn scores in. Jij ziet zijn bord live.</div><label class="f">Jezelf in beeld (laptopcamera)<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label><button class="btn" id="mkroom">Code aanmaken</button>`;
   const link=guestLink();
@@ -742,7 +743,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="front" ${(DB.set.boardView||'front')==='front'?'selected':''}>Recht van voren, 20 boven</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 02:35</div>
+   <div class="small muted">Versie 8 nov 02:45</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -789,9 +790,9 @@ function onGuestMsg(m){if(!m||typeof m!=='object')return;
   else if(m.t==='undo'){const t=curTurn();if(t&&!t.closed&&t.darts.length)undo()}
   else if(m.t==='next'){nextTurn()}}
 function onlineState(){
-  if(!MATCH)return {t:'state',idle:true,rot:0,host:DB.set.last.p1||'Host'};
+  if(!MATCH)return {t:'state',ver:APPV,idle:true,rot:0,host:DB.set.last.p1||'Host'};
   const G=GAMES[MATCH.game];const gi=MATCH.players.findIndex(p=>p.id===ONLINE.guestId);
-  return {t:'state',rot:0,game:G.name,chips:matchChips(G),gi,cur:ST.cur,over:!!ST.over,winner:ST.winner!=null?MATCH.players[ST.winner].name:null,
+  return {t:'state',ver:APPV,rot:0,game:G.name,chips:matchChips(G),gi,cur:ST.cur,over:!!ST.over,winner:ST.winner!=null?MATCH.players[ST.winner].name:null,
     players:ST.players.map((p,i)=>({name:MATCH.players[i].name,big:String(G.big(ST,i)),sub:MATCH.game==='x01'?'Gem. '+avg3(ST.stat[i].pts,ST.stat[i].darts)+(+ST.o.legs>1?' · legs '+p.legs:''):G.sub(ST,i)})),
     darts:ST.tdarts.map(lbl),tpts:ST.tpts||0,done:!!ST.done,msg:ST.msg||'',
     route:(G.sugg&&!ST.done?(G.sugg(ST)||[]).map(lbl):[]),hint:G.hint?(G.hint(ST)||''):'',
@@ -801,6 +802,9 @@ function onlineGameUI(){if(!MATCH||!MATCH.online)return;attachRemote();const gr=
   const r=$('#route');if(r&&isGuestTurn()&&!ST.over)r.innerHTML=`<span class="rtext">${esc(MATCH.players[ST.cur].name)} gooit op zijn telefoon…</span>`;
   const c=$('#camtoggle');if(c&&!ONLINE.open)c.insertAdjacentHTML('afterend','')}
 function updateOnlineChip(){}
+async function checkUpdate(){if(location.protocol!=='https:')return;try{const t=await fetch('index.html?nc='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APPV='(\d+)'/);
+  if(m&&m[1]>APPV&&!document.getElementById('updbar')){const d=document.createElement('button');d.id='updbar';d.className='btn primary';d.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:50';d.textContent='Nieuwe versie beschikbaar. Klik om te verversen.';d.onclick=()=>location.replace(location.pathname+'?v='+m[1]);document.body.appendChild(d)}}catch(e){}}
+setTimeout(checkUpdate,5000);setInterval(checkUpdate,120000);
 setInterval(()=>{if(!ONLINE.conn)return;if(ONLINE.conn.open){try{ONLINE.conn.send({t:'ping'})}catch(e){}}
   if(ONLINE.open&&Date.now()-ONLINE.lastSeen>15000){ONLINE.open=false;refreshOnlineBox();if(MATCH)renderGame()}},4000);
 // eigen laptopbeeld: zelf zien of je goed in beeld staat

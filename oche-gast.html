@@ -106,7 +106,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:35</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:45</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -146,6 +146,7 @@ function chip(state,txt){const c=$('#chip');c.className='chip '+state;c.querySel
 const code=(location.hash||'').replace('#','').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
 $('#code').value=code||store.get('oche-gast-code')||'';$('#name').value=store.get('oche-gast-name')||'';
 if(code&&$('#name').value)$('#name').focus();
+try{if(sessionStorage.getItem('oche-upd')&&code&&$('#name').value)setTimeout(()=>$('#go').click(),300)}catch(e){}
 // toetsenbord
 $('#keys').innerHTML=Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')+'<button data-n="25">25</button><button data-n="50">Bull</button><button data-n="0" class="w">Miss</button><button data-n="-1">↶</button>';
 function paintMult(){document.querySelectorAll('#mult button').forEach(b=>b.classList.toggle('on',+b.dataset.m===MULT))}
@@ -201,6 +202,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
+const GVER='0245';
 const STR={board:null,face:null};let SWAP=false,ROT=0;
 function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
@@ -229,7 +231,8 @@ function onMsg(m){if(!m||typeof m!=='object')return;
   if(m.t==='ping'||m.t==='pong')return;
   if(m.t==='full'){toast('Er speelt al iemand mee bij je maat');return}
   if(m.t==='bye'){$('#status').textContent='Je maat heeft het online spelen gestopt.';$('#pad').classList.add('locked');return}
-  if(m.t!=='state')return;S=m;if(typeof m.rot==='number'&&m.rot!==ROT){ROT=m.rot;applyRot()}
+  if(m.t!=='state')return;S=m;
+  if(m.ver&&m.ver>GVER){let done='';try{done=sessionStorage.getItem('oche-upd')||''}catch(e){}if(done!==m.ver){try{sessionStorage.setItem('oche-upd',m.ver)}catch(e){}toast('Nieuwe versie laden…');setTimeout(()=>location.replace(location.pathname+'?v='+m.ver+'#'+CODE),600);return}}
   if(m.idle){ownViews(true,false);document.body.classList.add('ingame');document.body.classList.remove('mine');$('#status').textContent='Wacht op start door '+(m.host||'je maat');$('#status').className='status';$('#cards').innerHTML=`<div class="pc"><div class="nm">${esc(m.host||'Je maat')}</div><div class="big">–</div><div class="sub">&nbsp;</div></div><div class="pc"><div class="nm">${esc(myName)} (jij)</div><div class="big">–</div><div class="sub">&nbsp;</div></div>`;$('#pad').classList.add('locked');return}
   $('#game').textContent=m.chips.join(' · ');
   $('#cards').innerHTML=m.players.map((p,i)=>`<div class="pc ${i===m.cur&&!m.over?'on':''}"><div class="nm">${esc(p.name)}${i===m.gi?' (jij)':''}</div><div class="big">${esc(p.big)}</div><div class="sub">${esc(p.sub)}</div></div>`).join('');
