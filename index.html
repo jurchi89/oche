@@ -275,6 +275,14 @@ main:has(#groot){max-width:none;padding-block:10px}
 .inpanel .totdisp{font-size:clamp(36px,6vh,56px)}
 .inpanel .tkeys{flex:1;grid-auto-rows:1fr}
 .inpanel .tkeys button{padding:0;min-height:40px}
+.qpad{display:flex;flex-direction:column;flex:1;min-height:0}
+.qkeys{flex:1;min-height:0;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:6px}
+.qkeys button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;font-family:var(--f-display);font-weight:800;font-size:clamp(20px,2.6vh,30px);min-height:40px;font-variant-numeric:tabular-nums}
+.qkeys button:hover{border-color:var(--accent)}
+.qkeys button[data-q="180"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.qkeys button[data-q="100"],.qkeys button[data-q="140"]{background:#fff4ef;border-color:#f6b49c}
+.qkeys .qout{background:var(--green);color:#fff;border-color:var(--green)}
+.qkeys .qundo{font-family:inherit}
 .inpanel .ctrl{display:grid;grid-template-columns:1fr 1.4fr;gap:6px}
 .inpanel #fixlast{padding:8px}
 .inpanel .camthumbs{flex:none}
@@ -341,7 +349,7 @@ main:has(#groot){max-width:none;padding-block:10px}
 .mtop{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:start}
 #groot .mtop{grid-template-columns:clamp(240px,21vw,380px) minmax(0,1fr) clamp(320px,27vw,520px);gap:14px}
 .mmid{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;min-width:0}
-.mmid .turnhead{font-size:clamp(22px,3.2vh,34px);max-width:46%}
+.mmid .turnhead{font-size:clamp(22px,3.2vh,34px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
 .mright{align-items:center;flex-wrap:wrap}
 .mleft .camst{align-self:center}.mchips{align-items:center}
 @media (max-width:1000px){#groot .mtop{grid-template-columns:1fr;justify-items:center}}
@@ -955,7 +963,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1555';
+const APPV='1600';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -968,7 +976,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:55</div>
+   <div class="small muted">Versie 8 nov 16:00</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1191,6 +1199,8 @@ function decomp(v,k,ok){for(let a=0;a<ALLT.length;a++){const A=ALLT[a];if(k===1)
       const r=v-val(A)-val(B);if(r<0||r>60)continue;for(const C of ALLT){if(val(C)===r&&ok([A,B,C]))return [A,B,C]}}}return null}
 function askChoice(title,sub,opts){return new Promise(res=>{$('#overlay').innerHTML=`<div class="ov"><div class="box stack startbox" style="max-width:460px"><h2>${esc(title)}</h2>${sub?`<div class="muted">${esc(sub)}</div>`:''}<div class="choice">${opts.map(o=>`<button class="btn" data-v="${o}">${o}</button>`).join('')}</div></div></div>`;
   $$('.choice button').forEach(b=>b.onclick=()=>{$('#overlay').innerHTML='';res(+b.dataset.v)})})}
+// veelgegooide beurtscores voor het tabblad Snelkeuze
+const QUICK=[0,22,26,30,40,41,43,45,55,57,60,66,81,83,85,95,100,121,125,135,140,180];
 async function submitTotal(v){
   if(!MATCH||MATCH.saved||ST.over)return;if(isBotTurn()||isGuestTurn()){toast('Je bent niet aan de beurt');return}
   if(v>180||IMPOSSIBLE.has(v)){toast(v+' kan niet met drie pijlen');return}
@@ -1406,7 +1416,7 @@ function buildGame(G){
         <div class="route" id="route"></div>
         <div class="boardwrap glow">${boardSVG('gboard')}<div class="livewrap" id="livewrap" hidden><video id="livev" autoplay muted playsinline></video><svg id="liveov" viewBox="-228 -228 456 456" preserveAspectRatio="xMidYMid meet"><g class="marks"></g></svg><span class="livelab" id="livelab"></span></div><div class="callout" id="callout"></div></div></div>
       <div class="inpanel" id="drawer"><div class="pad">
-        ${['x01','countup'].includes(MATCH.game)?'<div class="seg" id="entryseg"><button data-v="dart" class="on">Per pijl</button><button data-v="total">Beurttotaal</button></div><div class="totpad" id="totpad" hidden><div class="totdisp num" id="totdisp">0</div><div class="tkeys" id="tkeys">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button data-k="'+n+'">'+n+'</button>').join('')+'<button data-k="c">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div></div>':''}
+        ${['x01','countup'].includes(MATCH.game)?'<div class="seg" id="entryseg"><button data-v="dart" class="on">Per pijl</button><button data-v="total">Beurttotaal</button><button data-v="quick">Snelkeuze</button></div><div class="qpad" id="qpad" hidden><div class="qkeys" id="qkeys">'+QUICK.map(n=>'<button data-q="'+n+'">'+n+'</button>').join('')+'<button data-q="out" class="qout">Uit</button><button data-q="undo" class="qundo">↶</button></div></div><div class="totpad" id="totpad" hidden><div class="totdisp num" id="totdisp">0</div><div class="tkeys" id="tkeys">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button data-k="'+n+'">'+n+'</button>').join('')+'<button data-k="c">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div></div>':''}
         <div class="mult" id="mult"><button data-m="1">Single</button><button data-m="2">Double</button><button data-m="3">Triple</button></div>
         <div class="keys" id="keys">${Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')}<button data-n="25">25</button><button data-n="50">Bull</button><button data-n="0" class="wide">Miss</button><button data-n="-1" title="Laatste pijl ongedaan maken">↶</button></div>
         <div class="ctrl"><button class="btn" id="undo">Ongedaan maken</button><button class="btn primary" id="next">Volgende beurt</button></div>
@@ -1424,8 +1434,11 @@ function buildGame(G){
     let d;if(n===0)d={n:0,m:0};else if(n===50)d={n:25,m:2};else if(n===25)d={n:25,m:MULT===1?1:2};else d={n,m:MULT};
     const [x,y]=segPoint(d.n,d.m);d.x=x;d.y=y;d.src='pad';MULT=1;paintMult();addDart(d)};
   $('#undo').onclick=undo;$('#next').onclick=()=>nextTurn();
-  const es=$('#entryseg');if(es){const setMode=v=>{DB.set.entry=v;save();$$('#entryseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));$('#totpad').hidden=v!=='total';$('#mult').hidden=v==='total';$('#keys').hidden=v==='total'};
-    es.onclick=e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.v)};setMode(DB.set.entry==='total'?'total':'dart');
+  const es=$('#entryseg');if(es){const setMode=v=>{DB.set.entry=v;save();$$('#entryseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));$('#totpad').hidden=v!=='total';$('#qpad').hidden=v!=='quick';$('#mult').hidden=v!=='dart';$('#keys').hidden=v!=='dart'};
+    es.onclick=e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.v)};setMode(['total','quick'].includes(DB.set.entry)?DB.set.entry:'dart');
+    $('#qkeys').onclick=e=>{const b=e.target.closest('button');if(!b)return;const q=b.dataset.q;if(q==='undo'){undo();return}
+      if(q==='out'){if(MATCH.game!=='x01'){toast('Uitgooien kan alleen bij X01');return}const p=ST.players[ST.cur];if(!p.in||!checkout(p.score,3,ST.o.out)){toast(p.score+' kun je niet uitgooien');return}submitTotal(p.score);return}
+      submitTotal(+q)};
     let tv='';const td=$('#totdisp');$('#tkeys').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;
       if(k==='c')tv=tv.slice(0,-1);else if(k==='ok'){submitTotal(+(tv||0));tv=''}else if(tv.length<3)tv=(tv+k).replace(/^0+(\d)/,'$1');td.textContent=tv||'0'}}
   $('#quit').onclick=()=>confirmBox('Spel afsluiten? Een onafgemaakt spel wordt niet opgeslagen.','Afsluiten',()=>{botStop();MATCH=null;GDOM=null;DET.active=false;renderSetup()});
