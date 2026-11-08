@@ -1133,7 +1133,7 @@ async function findCams(){
   if(!err&&DEVICES.length){
     // automatisch verdelen: elk slot een eigen camera; bij 1 apparaat het beeld in drieën delen
     // nooit twee keer hetzelfde apparaat (behalve bij één apparaat dat in drieën gedeeld wordt)
-    const ids=DEVICES.map(d=>d.deviceId),used=new Set(),share=DEVICES.length<3;
+    const ids=DEVICES.map(d=>d.deviceId),used=new Set(),share=DEVICES.filter(d=>!(DB.set.faceLabel&&d.label===DB.set.faceLabel)).length<2;
     const isFace=d=>DB.set.faceLabel&&d.label===DB.set.faceLabel;
     const boardLab=(()=>{const cnt={};DEVICES.forEach(d=>cnt[d.label]=(cnt[d.label]||0)+1);return Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]})();
     const free=()=>DEVICES.filter(d=>!used.has(d.deviceId)&&!isFace(d)).sort((a,b)=>(b.label===boardLab)-(a.label===boardLab))[0];
@@ -1141,7 +1141,7 @@ async function findCams(){
       if(!share&&c.deviceId&&ids.includes(c.deviceId)&&!used.has(c.deviceId)){used.add(c.deviceId);c.devIndex=ids.indexOf(c.deviceId);continue}
       if(share&&c.deviceId&&ids.includes(c.deviceId))continue;
       if(!share&&c.devIndex!=null&&DEVICES[c.devIndex]&&!used.has(DEVICES[c.devIndex].deviceId)&&c.pts&&!c.deviceId){c.deviceId=DEVICES[c.devIndex].deviceId;c.label=DEVICES[c.devIndex].label;used.add(c.deviceId);CAMRT[i].stream=null;CAMRT[i].PW=0;continue}
-      const pick=share?(DEVICES.length===2?DEVICES[Math.min(i,1)]:DEVICES[0]):free();if(!pick)continue;
+      const pick=share?(DEVICES.length===2?DEVICES[Math.min(i,1)]:DEVICES[0]):free();if(!pick){if(c.deviceId&&used.has(c.deviceId)){c.deviceId='';c.label='';CAMRT[i].stream=null;CAMRT[i].PW=0;CAMRT[i].err='Geen derde camera gevonden. Controleer de USB-kabel.'}continue}
       if(pick.deviceId!==c.deviceId){c.pts=null;c.need20=false}
       c.deviceId=pick.deviceId;c.label=pick.label;c.devIndex=DEVICES.indexOf(pick);used.add(pick.deviceId);
       if(DEVICES.length===1)c.crop=['l3','m3','r3'][i];
