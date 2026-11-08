@@ -739,11 +739,11 @@ function onlineSetupHTML(){
    ${link?`<div class="small">Stuur je maat deze link:</div><div class="row"><input type="text" id="glink" readonly value="${esc(link)}" style="flex:1"><button class="btn" id="copylink">Kopiëren</button></div>`:`<div class="small muted">Je maat opent de telefoonpagina en vult de code <b>${ONLINE.code}</b> in.</div>`}
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 02:20</div>
+   <div class="small muted">Versie 8 nov 02:25</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
-function faceOptions(){const used=DB.cams.map(c=>c.deviceId);const bd=boardDevices().map(d=>d.deviceId);return DEVICES.filter(d=>!bd.includes(d.deviceId)).concat(DEVICES.filter(d=>bd.includes(d.deviceId))).map(d=>`<option value="${esc(d.deviceId)}" ${DB.set.faceLabel&&d.label===DB.set.faceLabel?'selected':''}>${esc(d.label||'Camera')}${used.includes(d.deviceId)?' (bordcamera)':''}</option>`).join('')}
+function faceOptions(){const used=DB.cams.map(c=>c.deviceId);const bd=boardDevices().map(d=>d.deviceId);return DEVICES.filter(d=>!bd.includes(d.deviceId)).map(d=>`<option value="${esc(d.deviceId)}" ${DB.set.faceLabel&&d.label===DB.set.faceLabel?'selected':''}>${esc(d.label||'Camera')}${used.includes(d.deviceId)?' (bordcamera)':''}</option>`).join('')}
 function sendBoard(){if(!ONLINE.peer||!ONLINE.conn)return;const pick=DB.set.shareCam!=null&&CAMRT[DB.set.shareCam]&&CAMRT[DB.set.shareCam].stream?CAMRT[DB.set.shareCam]:CAMRT.find(r=>r.stream);
   if(!pick){toast('Geen bordcamera actief om te delen');return}try{ONLINE.peer.call(ONLINE.conn.peer,pick.stream.stream,{metadata:{kind:'board'}})}catch(e){toast('Bordbeeld delen lukt niet: '+e.message)}}
 async function sendFace(){if(!ONLINE.peer||!ONLINE.conn)return;const st=await faceStream();if(!st)return;try{ONLINE.peer.call(ONLINE.conn.peer,st,{metadata:{kind:'face'}})}catch(e){toast('Laptopcamera delen lukt niet: '+e.message)}}
@@ -1093,7 +1093,9 @@ let DEVICES=[];
 // bordcamera's: nooit de laptop-/gezichtscamera. Zijn er meerdere identieke camera's, dan alleen dat type.
 const BUILTIN=/integrated|built-?in|facetime|hp \d+mp|hp hd|hp wide|hp true vision|ir camera|front|user facing|webcam hd/i;
 function boardDevices(){const cnt={};DEVICES.forEach(d=>cnt[d.label]=(cnt[d.label]||0)+1);const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
-  let l=DEVICES.filter(d=>!(DB.set.faceLabel&&d.label===DB.set.faceLabel));if(top&&cnt[top]>=2&&!BUILTIN.test(top))l=l.filter(d=>d.label===top);else l=l.filter(d=>!BUILTIN.test(d.label));return l}
+  // meerdere identieke (USB-)camera's = bordcamera's; die blijven altijd bordcamera, ook als er per ongeluk één als 'jezelf in beeld' gekozen is
+  if(top&&cnt[top]>=2&&!BUILTIN.test(top)){if(DB.set.faceLabel===top){DB.set.faceLabel='';try{save()}catch(e){}}return DEVICES.filter(d=>d.label===top)}
+  return DEVICES.filter(d=>!(DB.set.faceLabel&&d.label===DB.set.faceLabel)&&!BUILTIN.test(d.label))}
 async function findDevicesQuiet(){try{const t=await navigator.mediaDevices.getUserMedia({video:true});DEVICES=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput'&&d.deviceId);t.getTracks().forEach(x=>x.stop())}catch(e){}}
 const DET={active:false,test:false,state:'wait',settle:0,stable:0,quiet:0,info:'',testHits:[]};
 
