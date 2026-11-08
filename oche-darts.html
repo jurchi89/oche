@@ -739,7 +739,7 @@ function onlineSetupHTML(){
    ${link?`<div class="small">Stuur je maat deze link:</div><div class="row"><input type="text" id="glink" readonly value="${esc(link)}" style="flex:1"><button class="btn" id="copylink">Kopiëren</button></div>`:`<div class="small muted">Je maat opent de telefoonpagina en vult de code <b>${ONLINE.code}</b> in.</div>`}
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 02:15</div>
+   <div class="small muted">Versie 8 nov 02:20</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1093,7 +1093,7 @@ let DEVICES=[];
 // bordcamera's: nooit de laptop-/gezichtscamera. Zijn er meerdere identieke camera's, dan alleen dat type.
 const BUILTIN=/integrated|built-?in|facetime|hp \d+mp|hp hd|hp wide|hp true vision|ir camera|front|user facing|webcam hd/i;
 function boardDevices(){const cnt={};DEVICES.forEach(d=>cnt[d.label]=(cnt[d.label]||0)+1);const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];
-  let l=DEVICES.filter(d=>!(DB.set.faceLabel&&d.label===DB.set.faceLabel));if(top&&cnt[top]>=2)l=l.filter(d=>d.label===top);else{const nb=l.filter(d=>!BUILTIN.test(d.label));if(nb.length)l=nb}return l}
+  let l=DEVICES.filter(d=>!(DB.set.faceLabel&&d.label===DB.set.faceLabel));if(top&&cnt[top]>=2&&!BUILTIN.test(top))l=l.filter(d=>d.label===top);else l=l.filter(d=>!BUILTIN.test(d.label));return l}
 async function findDevicesQuiet(){try{const t=await navigator.mediaDevices.getUserMedia({video:true});DEVICES=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput'&&d.deviceId);t.getTracks().forEach(x=>x.stop())}catch(e){}}
 const DET={active:false,test:false,state:'wait',settle:0,stable:0,quiet:0,info:'',testHits:[]};
 
