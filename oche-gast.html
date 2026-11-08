@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101311">
+<title>Oche Gast</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#101311;--panel:#181d19;--panel2:#1f2520;--line:#2c342e;--fg:#efe8d6;--muted:#a5a08c;--gold:#e1ae4a;--red:#cf3a2d;--green:#2f8b51;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;min-height:100%}
+body{padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+.brand{font-family:var(--f-display);font-weight:800;font-size:26px;letter-spacing:.06em}
+.brand span{color:var(--gold)}
+.muted{color:var(--muted)}.small{font-size:14px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted)}
+input[type=text]{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:18px}
+#code{font-family:var(--f-display);font-weight:800;font-size:32px;letter-spacing:.2em;text-transform:uppercase;text-align:center}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-weight:700}
+.btn.primary{background:var(--gold);color:#1b1505;border-color:var(--gold)}
+.btn:disabled{opacity:.4}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);font-size:13px;color:var(--muted)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--muted)}.chip.ok i{background:var(--green)}.chip.bad i{background:var(--red)}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;transition:transform .3s}
+.pc.on{border-color:var(--gold);background:linear-gradient(160deg,#3a2f14,var(--panel));transform:translateY(-2px)}
+.pc .nm{font-family:var(--f-display);font-weight:800;font-size:18px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc .big{font-family:var(--f-display);font-weight:800;font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
+.pc:not(.on) .big{color:var(--muted)}
+.pc .sub{font-size:13px;color:var(--muted);min-height:1.2em}
+.turn{display:flex;align-items:stretch;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:8px}
+.turn .d{flex:1;display:grid;grid-template-columns:repeat(3,1fr)}
+.turn .s{display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:26px;min-height:54px;color:var(--line)}
+.turn .s.f{color:var(--fg)}
+.turn .t{border-left:1px solid var(--line);min-width:76px;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:34px}
+.status{text-align:center;font-family:var(--f-display);font-weight:800;font-size:26px;margin:10px 0 4px;min-height:32px}
+.status.me{color:var(--gold)}
+.route{display:flex;justify-content:center;gap:6px;min-height:34px;flex-wrap:wrap}
+.route span{border:2px solid var(--gold);color:var(--gold);border-radius:99px;padding:2px 12px;font-family:var(--f-display);font-weight:800;font-size:20px}
+.route span:first-child{background:var(--gold);color:#1b1505}
+.mult{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.mult button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 0;font-weight:800}
+.mult button.on{background:var(--fg);color:var(--bg)}
+.mult button[data-m="2"].on{background:var(--green);color:#fff;border-color:var(--green)}
+.mult button[data-m="3"].on{background:var(--red);color:#fff;border-color:var(--red)}
+.keys{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}
+.keys button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 0;font-weight:800;font-size:20px;font-variant-numeric:tabular-nums}
+.keys button:active{background:var(--line)}
+.keys .w{grid-column:span 2}
+.ctrl{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.locked .mult,.locked .keys,.locked .ctrl{opacity:.35;pointer-events:none}
+.vids{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
+.vid{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3}
+.vid video{width:100%;height:100%;object-fit:cover;display:block}
+.vid b{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:6px;font-size:12px}
+.mini{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:110px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:2px solid var(--gold);background:#000;z-index:5}
+.mini video{width:100%;height:100%;object-fit:cover}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:10px;font-weight:700;z-index:9}
+.big-msg{font-family:var(--f-display);font-weight:800;font-size:44px;color:var(--gold);text-align:center}
+#play:not([hidden]){display:flex;flex-direction:column}
+#play .vids{order:5}
+body:not(.mine) #play .vids{order:2;margin-top:8px}
+body:not(.mine) #pad{order:6}
+body:not(.mine) .vid{aspect-ratio:auto;height:min(52vh,70vw)}
+body.mine .vid{max-height:28vh;aspect-ratio:auto;height:28vh}
+#play .cards{order:0}#play .turn{order:1}#play .status{order:3}#play .route{order:4}#pad{order:4}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+
+<section id="join" class="stack">
+  <div class="box stack">
+    <div>Speel mee met je maat. Zet je telefoon in de standaard met de camera op je bord. Jij tikt je scores in, hij ziet je bord live.</div>
+    <label class="f">Code van je maat<input type="text" id="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="ABC123"></label>
+    <label class="f">Jouw naam<input type="text" id="name" maxlength="24" autocomplete="nickname" placeholder="Naam"></label>
+    <label class="small muted" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="usecam" checked> Mijn camera delen (achtercamera op het bord)</label>
+    <button class="btn primary" id="go">Verbinden</button>
+    <div class="small muted" id="jmsg"></div>
+  </div>
+</section>
+
+<section id="play" hidden>
+  <div class="small muted" id="game" style="text-align:center;margin-bottom:6px"></div>
+  <div class="cards" id="cards"></div>
+  <div class="turn"><div class="d" id="tdarts"><div class="s">·</div><div class="s">·</div><div class="s">·</div></div><div class="t" id="tsum">0</div></div>
+  <div class="status" id="status">Wachten op de start…</div>
+  <div class="route" id="route"></div>
+  <div id="pad" class="locked">
+    <div class="mult" id="mult"><button data-m="1" class="on">Single</button><button data-m="2">Double</button><button data-m="3">Triple</button></div>
+    <div class="keys" id="keys"></div>
+    <div class="ctrl"><button class="btn" id="undo">Ongedaan</button><button class="btn primary" id="next">Volgende beurt</button></div>
+  </div>
+  <div class="vids"><div class="vid"><video id="hostv" autoplay playsinline muted></video><b id="hostlab">Bord van je maat</b></div></div>
+</section>
+<div class="mini" id="mini" hidden><video id="selfv" autoplay playsinline muted></video></div>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let peer=null,conn=null,local=null,S=null,MULT=1,wake=null,myName='';
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
+function chip(state,txt){const c=$('#chip');c.className='chip '+state;c.querySelector('span').textContent=txt}
+const code=(location.hash||'').replace('#','').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+$('#code').value=code||'';$('#name').value=store.get('oche-gast-name')||'';
+if(code&&$('#name').value)$('#name').focus();
+// toetsenbord
+$('#keys').innerHTML=Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')+'<button data-n="25">25</button><button data-n="50">Bull</button><button data-n="0" class="w">Miss</button><button data-n="-1">↶</button>';
+function paintMult(){document.querySelectorAll('#mult button').forEach(b=>b.classList.toggle('on',+b.dataset.m===MULT))}
+$('#mult').onclick=e=>{const b=e.target.closest('button');if(b){MULT=+b.dataset.m;paintMult()}};
+$('#keys').onclick=e=>{const b=e.target.closest('button');if(!b)return;const n=+b.dataset.n;
+  if(n===-1){send({t:'undo'});return}
+  let d;if(n===0)d={n:0,m:0};else if(n===50)d={n:25,m:2};else if(n===25)d={n:25,m:MULT===1?1:2};else d={n,m:MULT};
+  if(navigator.vibrate)try{navigator.vibrate(20)}catch(e){}
+  send({t:'dart',n:d.n,m:d.m});MULT=1;paintMult()};
+$('#undo').onclick=()=>send({t:'undo'});$('#next').onclick=()=>send({t:'next'});
+function send(m){if(conn&&conn.open){try{conn.send(m)}catch(e){toast('Versturen mislukt')}}else toast('Niet verbonden')}
+
+$('#go').onclick=async()=>{
+  const c=$('#code').value.trim().toUpperCase();myName=$('#name').value.trim();
+  if(c.length!==6){$('#jmsg').textContent='De code heeft 6 tekens. Je maat ziet hem in zijn Oche-app.';return}
+  if(!myName){$('#jmsg').textContent='Vul je naam in.';return}
+  if(!window.Peer){$('#jmsg').textContent='Deze pagina kon niet volledig laden. Controleer je internet en ververs de pagina.';return}
+  store.set('oche-gast-name',myName);$('#go').disabled=true;$('#jmsg').textContent='Verbinden…';
+  if($('#usecam').checked){
+    try{local=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:960},height:{ideal:720},frameRate:{ideal:24}},audio:false});
+      $('#selfv').srcObject=local;$('#mini').hidden=false}
+    catch(e){toast('Camera niet beschikbaar: '+(e.name==='NotAllowedError'?'geef toestemming in je browser':e.message));local=null}}
+  connect(c);
+};
+function connect(c){
+  peer=new Peer({debug:1});
+  peer.on('open',()=>{
+    conn=peer.connect('oche-dart-'+c,{reliable:true});
+    const to=setTimeout(()=>{if(!conn.open){$('#jmsg').textContent='Geen verbinding. Klopt de code, en staat Oche bij je maat nog open?';$('#go').disabled=false;chip('bad','Niet verbonden')}},12000);
+    conn.on('open',()=>{clearTimeout(to);conn.send({t:'hello',name:myName});chip('ok','Verbonden');$('#join').hidden=true;$('#play').hidden=false;
+      const call=peer.call('oche-dart-'+c,local||blankStream());call.on('stream',st=>{$('#hostv').srcObject=st;$('#hostv').play().catch(()=>{})});
+      try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>wake=w).catch(()=>{})}catch(e){}});
+    conn.on('data',onMsg);
+    conn.on('close',()=>{chip('bad','Verbinding weg');$('#status').textContent='Verbinding verbroken. Ververs de pagina om opnieuw te verbinden.';$('#pad').classList.add('locked')});
+  });
+  peer.on('error',e=>{chip('bad','Fout');$('#go').disabled=false;
+    $('#jmsg').textContent=e.type==='peer-unavailable'?'Deze code bestaat niet (meer). Vraag je maat om de code in zijn Oche-app.':e.type==='network'||e.type==='server-error'?'Geen verbinding met de koppeldienst. Controleer je internet.':'Fout: '+(e.message||e.type)});
+}
+function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&conn&&conn.open&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>wake=w).catch(()=>{})});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let lastTurnMine=false;
+function onMsg(m){if(!m||typeof m!=='object')return;
+  if(m.t==='full'){toast('Er speelt al iemand mee bij je maat');return}
+  if(m.t==='bye'){$('#status').textContent='Je maat heeft het online spelen gestopt.';$('#pad').classList.add('locked');return}
+  if(m.t!=='state')return;S=m;
+  if(m.idle){$('#game').textContent='';$('#status').textContent='Verbonden. Wachten tot '+(m.host||'je maat')+' een spel start…';$('#status').className='status';$('#cards').innerHTML='';$('#pad').classList.add('locked');return}
+  $('#game').textContent=m.chips.join(' · ');
+  $('#cards').innerHTML=m.players.map((p,i)=>`<div class="pc ${i===m.cur&&!m.over?'on':''}"><div class="nm">${esc(p.name)}${i===m.gi?' (jij)':''}</div><div class="big">${esc(p.big)}</div><div class="sub">${esc(p.sub)}</div></div>`).join('');
+  const sl=document.querySelectorAll('#tdarts .s');sl.forEach((el,k)=>{const d=m.darts[k];el.textContent=d||'·';el.classList.toggle('f',!!d)});
+  $('#tsum').textContent=m.tpts;
+  const mine=!m.over&&m.cur===m.gi;
+  const st=$('#status');
+  if(m.over){st.innerHTML=`<span class="big-msg">${m.winner?esc(m.winner)+' wint':'Einde spel'}</span>`;st.className='status'}
+  else if(m.msg==='Bust'){st.textContent='Bust';st.className='status me'}
+  else if(mine){st.textContent=m.done?'Beurt klaar: tik op Volgende beurt':'Jouw beurt';st.className='status me'}
+  else{st.textContent=esc(m.players[m.cur].name)+' gooit…';st.className='status'}
+  $('#route').innerHTML=mine&&m.route.length?m.route.map(r=>`<span>${esc(r)}</span>`).join(''):(mine&&m.hint?`<span style="background:none;border:0;color:var(--fg)">${esc(m.hint)}</span>`:'');
+  $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);
+  $('#hostlab').textContent='Bord van '+(m.players.find((p,i)=>i!==m.gi)||{name:'je maat'}).name;
+  if(mine&&!lastTurnMine&&navigator.vibrate)try{navigator.vibrate([60,40,60])}catch(e){}
+  lastTurnMine=mine;
+}
+</script>
+</body>
+</html>
