@@ -192,6 +192,7 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .ownv .rvid.face video{transform:scaleX(-1)}
 .ownv .rvid:not(.face){aspect-ratio:1/1;max-width:340px;margin:0 auto}
 #ownboard{object-fit:contain;transition:transform .3s}
+.rvid.nocam{aspect-ratio:auto!important;height:auto;min-height:40px;padding:8px 10px;background:#2a2f2c}.rvid.nocam video{display:none}.rvid.nocam span{position:static!important;font-size:12px}
 .rvid.face.dead{aspect-ratio:auto!important;height:34px;background:#2a2f2c}
 .rvid.face.dead video{visibility:hidden}
 .rvid.face.dead::after{content:'Laptopcamera geeft geen beeld (klepje dicht of in gebruik?)';position:absolute;inset:0;display:flex;align-items:center;padding:0 10px 0 44px;color:#fff;font-size:12px}
@@ -947,7 +948,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1530';
+const APPV='1535';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -960,7 +961,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:30</div>
+   <div class="small muted">Versie 8 nov 15:35</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row"><button class="btn" id="demomate">${DEMOM.on?'Proefspel sluiten':'Proefspel: zie wat je maat ziet'}</button><button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat". Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1005,7 +1006,7 @@ function closeRoom(){demoClose(true);try{ONLINE.conn&&ONLINE.conn.send({t:'bye'}
   Object.assign(ONLINE,{peer:null,conn:null,open:false,code:'',guestName:'',remote:null,lastSent:''});refreshOnlineBox()}
 function attachRemote(){const v=$('#rvideo');if(!v)return;const s=$('#rvstate');
   if(ONLINE.remote&&v.srcObject!==ONLINE.remote){v.srcObject=ONLINE.remote;v.play().catch(()=>{})}
-  if(s){if(!ONLINE.remote)s.textContent=ONLINE.guestCam===false?(ONLINE.guestName||'Je maat')+' deelt geen camera. Hij moet bij het verbinden "Mijn camera delen" aanvinken en toestemming geven.':'Wachten op beeld…';else s.textContent='';s.hidden=!!ONLINE.remote}}
+  if(s){if(!ONLINE.remote)s.textContent=ONLINE.guestCam===false?(ONLINE.guestName||'Je maat')+' deelt geen camera. Hij moet bij het verbinden "Mijn camera delen" aanvinken en toestemming geven.':'Wachten op beeld…';else s.textContent='';s.hidden=!!ONLINE.remote}const bx=v.closest('.rvid');if(bx)bx.classList.toggle('nocam',!ONLINE.remote&&ONLINE.guestCam===false)}
 function onGuestMsg(m){if(!m||typeof m!=='object')return;
   if(m.t==='ping'){try{ONLINE.conn.send({t:'pong'})}catch(e){}return}
   if(m.t==='pong')return;
