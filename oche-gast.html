@@ -59,10 +59,12 @@ input[type=text]{background:var(--panel2);border:1px solid var(--line);border-ra
 .vids{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
 .vid{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3}
 .vid video{width:100%;height:100%;object-fit:cover;display:block}
-.vid .face{position:absolute;right:8px;top:8px;width:30%;max-width:160px;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:2px solid var(--gold);background:#000}
-.vid .face video{width:100%;height:100%;object-fit:cover}
+.face{position:fixed;right:max(10px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));width:36vw;max-width:220px;aspect-ratio:16/10;border-radius:12px;overflow:hidden;border:2px solid var(--gold);background:#000;z-index:6;box-shadow:0 6px 24px rgba(0,0,0,.6)}
+.face video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.face span{position:absolute;left:6px;bottom:4px;font-size:11px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 6px;border-radius:5px}
+body.hasface .top{padding-right:calc(min(36vw,220px) + 8px)}
 .vid b{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:6px;font-size:12px}
-.mini{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:110px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:2px solid var(--gold);background:#000;z-index:5}
+.mini{position:fixed;left:max(12px,env(safe-area-inset-left));bottom:max(12px,env(safe-area-inset-bottom));width:72px;opacity:.85;aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:2px solid var(--gold);background:#000;z-index:5}
 .mini video{width:100%;height:100%;object-fit:cover}
 .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 14px;border-radius:10px;font-weight:700;z-index:9}
 .big-msg{font-family:var(--f-display);font-weight:800;font-size:44px;color:var(--gold);text-align:center}
@@ -70,8 +72,10 @@ input[type=text]{background:var(--panel2);border:1px solid var(--line);border-ra
 #play .vids{order:5}
 body:not(.mine) #play .vids{order:2;margin-top:8px}
 body:not(.mine) #pad{order:6}
-body:not(.mine) .vid{aspect-ratio:auto;height:min(52vh,70vw)}
-body.mine .vid{max-height:28vh;aspect-ratio:auto;height:28vh}
+body:not(.mine) .vid{aspect-ratio:auto;height:min(62vh,90vw)}
+body:not(.mine) #pad{display:none}
+body.mine .vids{display:none}
+body.ingame:not(.mine) .pc .big{font-size:40px}
 #play .cards{order:0}#play .turn{order:1}#play .status{order:3}#play .route{order:4}#pad{order:4}
 [hidden]{display:none!important}
 </style>
@@ -101,8 +105,9 @@ body.mine .vid{max-height:28vh;aspect-ratio:auto;height:28vh}
     <div class="keys" id="keys"></div>
     <div class="ctrl"><button class="btn" id="undo">Ongedaan</button><button class="btn primary" id="next">Volgende beurt</button></div>
   </div>
-  <div class="vids"><div class="vid"><video id="hostv" autoplay playsinline muted></video><b id="hostlab">Bord van je maat</b><div class="face" id="face" hidden><video id="facev" autoplay playsinline muted></video></div></div></div>
+  <div class="vids"><div class="vid"><video id="hostv" autoplay playsinline muted></video><b id="hostlab">Bord van je maat</b></div></div>
 </section>
+<div class="face" id="face" hidden><video id="facev" autoplay playsinline muted></video><span id="facelab">Je maat</span></div>
 <div class="mini" id="mini" hidden><video id="selfv" autoplay playsinline muted></video></div>
 
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -141,7 +146,7 @@ $('#go').onclick=async()=>{
 };
 function connect(c){
   peer=new Peer({debug:1});
-  peer.on('call',call=>{call.answer();call.on('stream',st=>{const v=$('#facev');v.srcObject=st;v.play().catch(()=>{});$('#face').hidden=false})});
+  peer.on('call',call=>{call.answer();call.on('stream',st=>{const v=$('#facev');v.srcObject=st;v.play().catch(()=>{});$('#face').hidden=false;document.body.classList.add('hasface')})});
   peer.on('open',()=>{
     conn=peer.connect('oche-dart-'+c,{reliable:true});
     const to=setTimeout(()=>{if(!conn.open){$('#jmsg').textContent='Geen verbinding. Klopt de code, en staat Oche bij je maat nog open?';$('#go').disabled=false;chip('bad','Niet verbonden')}},12000);
@@ -174,7 +179,8 @@ function onMsg(m){if(!m||typeof m!=='object')return;
   else if(mine){st.textContent=m.done?'Beurt klaar: tik op Volgende beurt':'Jouw beurt';st.className='status me'}
   else{st.textContent=esc(m.players[m.cur].name)+' gooit…';st.className='status'}
   $('#route').innerHTML=mine&&m.route.length?m.route.map(r=>`<span>${esc(r)}</span>`).join(''):(mine&&m.hint?`<span style="background:none;border:0;color:var(--fg)">${esc(m.hint)}</span>`:'');
-  $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);
+  $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);document.body.classList.add('ingame');
+  const hn=(m.players.find((p,i)=>i!==m.gi)||{name:'Je maat'}).name;$('#facelab').textContent=hn;
   $('#hostlab').textContent='Bord van '+(m.players.find((p,i)=>i!==m.gi)||{name:'je maat'}).name;
   if(mine&&!lastTurnMine&&navigator.vibrate)try{navigator.vibrate([60,40,60])}catch(e){}
   lastTurnMine=mine;
