@@ -219,6 +219,7 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .plist .spark,.plist .hist{display:none}
 .plist .pc.on{transform:none}
 @media (max-width:760px){.bullwrap{grid-template-columns:1fr}}
+#gboard.fixing{cursor:crosshair;outline:3px dashed var(--accent);outline-offset:6px;border-radius:50%}
 /* wedstrijdscherm */
 #groot{display:flex;flex-direction:column;gap:14px}
 .mtop{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:start}
@@ -782,7 +783,7 @@ function say(t){if(!DB.set.voice||!window.speechSynthesis)return;try{speechSynth
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1300';
+const APPV='1345';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -795,7 +796,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="front" ${(DB.set.boardView||'front')==='front'?'selected':''}>Recht van voren, 20 boven</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 13:00</div>
+   <div class="small muted">Versie 8 nov 13:45</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1153,7 +1154,7 @@ function genericRows(rec){const S=rec.sum;const r=(l,f)=>'<tr><td>'+l+'</td>'+S.
   if(S[0].tries!=null)h+=r('Uitgooien gehaald',s=>s.hits+'/'+s.tries);
   return h}
 
-let GDOM=null;
+let GDOM=null;const FIX={on:false};
 function renderGame(){
   const G=GAMES[MATCH.game];const host=$('#v-play');
   if(!GDOM||!host.contains(GDOM.root)||GDOM.mid!==MATCH.id)buildGame(G);
@@ -1192,6 +1193,7 @@ function buildGame(G){
         <div class="mult" id="mult"><button data-m="1">Single</button><button data-m="2">Double</button><button data-m="3">Triple</button></div>
         <div class="keys" id="keys">${Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')}<button data-n="25">25</button><button data-n="50">Bull</button><button data-n="0" class="wide">Miss</button><button data-n="-1" title="Laatste pijl ongedaan maken">↶</button></div>
         <div class="ctrl"><button class="btn" id="undo">Ongedaan maken</button><button class="btn primary" id="next">Volgende beurt</button></div>
+        <button class="btn" id="fixlast" title="Klik daarna op het bord waar de pijl echt zit">Laatste pijl verbeteren</button>
         <div class="row small muted"><label class="row"><input type="checkbox" id="sfx" ${DB.set.sfx!==false?'checked':''}> Geluid</label><span>Klik op het bord voor een exacte plek. Backspace = ongedaan, Enter = volgende beurt.</span></div>
         <div class="camthumbs" id="thumbs"></div>
       </div></details>
@@ -1213,7 +1215,12 @@ function buildGame(G){
   $('#camtoggle').onclick=()=>{if(MATCH.input==='cam'){MATCH.input='manual';DET.active=false;$('#drawer').open=true}else{MATCH.input='cam';startAllCams().then(()=>{resetRefs();DET.active=true})}renderGame()};
   $('#tbd').onclick=()=>undo();
   $('#selfx').onclick=()=>{$('#selfcam').hidden=true;GDOM.selfHidden=true};
-  const svg=$('#gboard');svg.addEventListener('click',e=>{const [x,y]=svgToMM(svg,e);if(Math.hypot(x,y)>225)return;const s=scoreAt(x,y);addDart({n:s.n,m:s.m,x,y,src:'click'})});
+  const svg=$('#gboard');svg.addEventListener('click',e=>{const [x,y]=svgToMM(svg,e);if(Math.hypot(x,y)>225)return;const s=scoreAt(x,y);
+    if(FIX.on){FIX.on=false;svg.classList.remove('fixing');const t=curTurn();if(t&&t.darts.length){const o=t.darts[t.darts.length-1];
+        if(o.src==='cam')logDet({fix:[+x.toFixed(1),+y.toFixed(1)],was:[+(o.x||0).toFixed(1),+(o.y||0).toFixed(1)],err:+Math.hypot(x-(o.x||0),y-(o.y||0)).toFixed(1)});
+        t.darts[t.darts.length-1]={n:s.n,m:s.m,x,y,src:'fix'};t.closed=false;refresh();toast('Verbeterd naar '+lbl(s));return}}
+    addDart({n:s.n,m:s.m,x,y,src:'click'})});
+  $('#fixlast').onclick=()=>{const t=curTurn();if(!t||!t.darts.length){toast('Er is nog geen pijl in deze beurt');return}FIX.on=true;svg.classList.add('fixing');toast('Klik op het bord waar de pijl echt zit')};
   paintMult();
 }
 function tween(el,to){
@@ -1298,6 +1305,7 @@ const CROPS={full:['Hele beeld',[0,0,1,1]],l3:['Linker derde',[0,0,1/3,1]],m3:['
 const CAL=[{lab:'20 | 1',a:81},{lab:'6 | 10',a:-9},{lab:'3 | 19',a:-99},{lab:'11 | 14',a:171}].map(c=>Object.assign(c,{xy:[RB.do*Math.cos(c.a*Math.PI/180),RB.do*Math.sin(c.a*Math.PI/180)]}));
 const STREAMS={};
 const CAMRT=[0,1,2].map(()=>({stream:null,PW:0,PH:0,proc:null,pctx:null,cur:null,ref:null,prev:null,mask:null,maskN:0,H:null,Hinv:null,chg:0,mot:0,last:null,lastCands:null,err:''}));
+const PROCW=640,PXF=(PROCW/320)*(PROCW/320); // verwerking op 640 px breed; drempels uit de instellingen gelden voor 320 px
 let DEVICES=[];
 // bordcamera's: nooit de laptop-/gezichtscamera. Zijn er meerdere identieke camera's, dan alleen dat type.
 const BUILTIN=/integrated|built-?in|facetime|hp \d+mp|hp hd|hp wide|hp true vision|ir camera|front|user facing|webcam hd/i;
@@ -1397,7 +1405,7 @@ async function startAllCams(){if(!camSupported())return;for(let i=0;i<3;i++){con
 function stopAll(){Object.keys(STREAMS).forEach(k=>{STREAMS[k].stream.getTracks().forEach(t=>t.stop());delete STREAMS[k]});CAMRT.forEach(r=>{r.stream=null;r.PW=0});updateChip()}
 function cropRect(i,v){const c=(CROPS[DB.cams[i].crop||'full']||CROPS.full)[1];return [c[0]*v.videoWidth,c[1]*v.videoHeight,c[2]*v.videoWidth,c[3]*v.videoHeight]}
 function ensureProc(i){const rt=CAMRT[i],v=rt.stream&&rt.stream.video;if(!v||v.readyState<2||!v.videoWidth)return false;
-  if(!rt.PW){const [,, sw,sh]=cropRect(i,v);rt.PW=320;rt.PH=Math.max(60,Math.round(320*sh/sw));rt.proc=document.createElement('canvas');rt.proc.width=rt.PW;rt.proc.height=rt.PH;
+  if(!rt.PW){const [,, sw,sh]=cropRect(i,v);rt.PW=PROCW;rt.PH=Math.max(60,Math.round(PROCW*sh/sw));rt.proc=document.createElement('canvas');rt.proc.width=rt.PW;rt.proc.height=rt.PH;
     rt.pctx=rt.proc.getContext('2d',{willReadFrequently:true});const N=rt.PW*rt.PH;rt.cur=new Uint8Array(N);rt.ref=null;rt.prev=new Uint8Array(N);buildMask(i)}
   return true}
 function setupCalib(i){const rt=CAMRT[i],pts=DB.cams[i].pts;rt.H=rt.Hinv=null;
@@ -1424,8 +1432,8 @@ function tick(){
   for(const i of ids){const rt=CAMRT[i];if(rt.maskN&&rt.chg>rt.maskN*.35&&DET.state!=='takeout'){rt.ref.set(rt.cur);rt.chg=0}}
   if(DET.armT&&performance.now()<DET.armT){ids.forEach(i=>{const rt=CAMRT[i];if(rt.ref&&rt.cur)rt.ref.set(rt.cur)});DET.info='Camera\'s stellen zich in…';updateDetState();return}
   const frac=Math.max(...ids.map(i=>CAMRT[i].maskN?CAMRT[i].chg/CAMRT[i].maskN:0));
-  const moving=ids.some(i=>CAMRT[i].mot>DB.set.minPx);
-  const dart=ids.some(i=>CAMRT[i].chg>DB.set.minPx);
+  const MP=DB.set.minPx*PXF;const moving=ids.some(i=>CAMRT[i].mot>MP);
+  const dart=ids.some(i=>CAMRT[i].chg>MP);
   if(frac>0.10&&DET.state!=='takeout'){DET.state='takeout';DET.stable=0}
   if(DET.state==='takeout'){
     DET.info='Hand of pijlen uithalen gezien… wacht tot het stil is';
@@ -1437,24 +1445,52 @@ function tick(){
   updateDetState();
 }
 function tipCands(i){
-  const rt=CAMRT[i],W=rt.PW,Hh=rt.PH,g=rt.cur,r=rt.ref,m=rt.mask,thr=DB.set.thr;
-  const on=new Uint8Array(W*Hh);for(let k=0;k<on.length;k++)if(m[k]&&Math.abs(g[k]-r[k])>thr)on[k]=1;
-  const xs=[],ys=[];
-  for(let y=1;y<Hh-1;y++)for(let x=1;x<W-1;x++){const k=y*W+x;if(!on[k])continue;if(on[k-1]+on[k+1]+on[k-W]+on[k+W]>=2){xs.push(x);ys.push(y)}}
-  const n=xs.length;if(n<DB.set.minPx)return null;
-  let mx=0,my=0;for(let k=0;k<n;k++){mx+=xs[k];my+=ys[k]}mx/=n;my/=n;
-  let cxx=0,cyy=0,cxy=0;for(let k=0;k<n;k++){const dx=xs[k]-mx,dy=ys[k]-my;cxx+=dx*dx;cyy+=dy*dy;cxy+=dx*dy}
-  {const tr=(cxx+cyy)/n,dt=(cxx*cyy-cxy*cxy)/(n*n),disc=Math.sqrt(Math.max(0,tr*tr/4-dt)),l1=tr/2+disc,l2=Math.max(1e-6,tr/2-disc);
-   if(l1/l2<4){rt.reject='geen pijlvorm';return null}
-   if(n>rt.maskN*.06){rt.reject='te groot (hand of licht)';return null}}
-  const th=.5*Math.atan2(2*cxy,cxx-cyy),vx=Math.cos(th),vy=Math.sin(th);
-  const t=[];for(let k=0;k<n;k++)t.push((xs[k]-mx)*vx+(ys[k]-my)*vy);t.sort((a,b)=>a-b);
-  const t1=t[Math.floor(n*.02)],t2=t[Math.min(n-1,Math.floor(n*.98))];
-  let e=[[mx+t1*vx,my+t1*vy],[mx+t2*vx,my+t2*vy]];e.sort((a,b)=>b[1]-a[1]); // [onderste, bovenste] in beeld
-  const tip=DB.cams[i].tip||'auto';if(tip==='down')e=[e[0]];else if(tip==='up')e=[e[1]];
-  return e.map(p=>({px:p,mm:applyH(rt.H,p[0]/W,p[1]/Hh).slice(0,2)}));
+  const rt=CAMRT[i],W=rt.PW,Hh=rt.PH,g=rt.cur,r=rt.ref,m=rt.mask,N=W*Hh;rt.reject='';rt.lastLine=null;
+  // verschilbeeld met adaptieve drempel (Otsu op de veranderde pixels)
+  const D=new Uint8Array(N);const hist=new Uint32Array(256);let cnt=0;
+  for(let k=0;k<N;k++){if(!m[k])continue;const v=Math.abs(g[k]-r[k]);D[k]=v;if(v>8){hist[v]++;cnt++}}
+  let thr=DB.set.thr;if(cnt>50){let sum=0;for(let v=0;v<256;v++)sum+=v*hist[v];let sB=0,wB=0,best=0,ot=thr;for(let v=0;v<256;v++){wB+=hist[v];if(!wB)continue;const wF=cnt-wB;if(!wF)break;sB+=v*hist[v];const mB=sB/wB,mF=(sum-sB)/wF,bv=wB*wF*(mB-mF)*(mB-mF);if(bv>best){best=bv;ot=v}}thr=Math.max(thr*0.8,Math.min(ot,thr*2.5))}
+  const on=new Uint8Array(N);for(let k=0;k<N;k++)if(D[k]>thr)on[k]=1;
+  // opening: losse ruis eruit
+  const er=new Uint8Array(N);for(let y=1;y<Hh-1;y++)for(let x=1;x<W-1;x++){const k=y*W+x;if(on[k]&&(on[k-1]+on[k+1]+on[k-W]+on[k+W])>=3)er[k]=1}
+  const op=new Uint8Array(N);for(let y=1;y<Hh-1;y++)for(let x=1;x<W-1;x++){const k=y*W+x;if(er[k]||er[k-1]||er[k+1]||er[k-W]||er[k+W])op[k]=on[k]}
+  // grootste aaneengesloten vlek (+ vlekken die in het verlengde liggen: losse flight of schacht)
+  const lab=new Int32Array(N);const comps=[];const st=[];
+  for(let k=0;k<N;k++){if(!op[k]||lab[k])continue;const id=comps.length+1;let n=0,sx=0,sy=0;st.length=0;st.push(k);lab[k]=id;const px=[];
+    while(st.length){const q=st.pop();const x=q%W,y=(q/W)|0;n++;sx+=x;sy+=y;px.push(q);for(const nb of [q-1,q+1,q-W,q+W]){if(nb<0||nb>=N||lab[nb]||!op[nb])continue;if(Math.abs(nb%W-x)>1)continue;lab[nb]=id;st.push(nb)}}
+    comps.push({n,cx:sx/n,cy:sy/n,px})}
+  if(!comps.length){rt.reject='niets gevonden';return null}
+  comps.sort((a,b)=>b.n-a.n);const main=comps[0];const minA=DB.set.minPx*PXF;
+  if(main.n<minA){rt.reject='te klein';return null}
+  if(main.n>rt.maskN*.06){rt.reject='te groot (hand of licht)';return null}
+  const pca=pts=>{let mx=0,my=0;for(const q of pts){mx+=q%W;my+=(q/W)|0}mx/=pts.length;my/=pts.length;let cxx=0,cyy=0,cxy=0;for(const q of pts){const dx=q%W-mx,dy=((q/W)|0)-my;cxx+=dx*dx;cyy+=dy*dy;cxy+=dx*dy}
+    const n=pts.length,tr=(cxx+cyy)/n,dt=(cxx*cyy-cxy*cxy)/(n*n),disc=Math.sqrt(Math.max(0,tr*tr/4-dt));const th=.5*Math.atan2(2*cxy,cxx-cyy);return {mx,my,vx:Math.cos(th),vy:Math.sin(th),el:(tr/2+disc)/Math.max(1e-6,tr/2-disc)}};
+  let P=pca(main.px);let pts=main.px.slice();
+  for(const c of comps.slice(1)){if(c.n<minA*0.15)break;const dx=c.cx-P.mx,dy=c.cy-P.my;const off=Math.abs(dx*P.vy-dy*P.vx);if(off<4*PROCW/320)pts=pts.concat(c.px)}
+  if(pts.length!==main.px.length)P=pca(pts);
+  if(P.el<4){rt.reject='geen pijlvorm';return null}
+  const t=pts.map(q=>(q%W-P.mx)*P.vx+(((q/W)|0)-P.my)*P.vy).sort((a,b)=>a-b);const n=t.length;
+  const t1=t[Math.floor(n*.01)],t2=t[Math.min(n-1,Math.floor(n*.99))];
+  const E1=[P.mx+t1*P.vx,P.my+t1*P.vy],E2=[P.mx+t2*P.vx,P.my+t2*P.vy];
+  const toMM=p=>applyH(rt.H,p[0]/W,p[1]/Hh).slice(0,2);
+  const A=toMM(E1),B=toMM(E2);const len=Math.hypot(E2[0]-E1[0],E2[1]-E1[1]);
+  rt.lastLine=[E1,E2];
+  let e=[E1,E2].slice().sort((a,b)=>b[1]-a[1]);const tip=DB.cams[i].tip||'auto';if(tip==='down')e=[e[0]];else if(tip==='up')e=[e[1]];
+  return {i,ends:e.map(p=>({px:p,mm:toMM(p)})),line:{a:A,b:B},w:Math.min(len,200)*Math.min(P.el,40)/40,lenPx:len};
 }
-function fuse(lists){
+function lineX(L1,L2){const [x1,y1]=L1.a,[x2,y2]=L1.b,[x3,y3]=L2.a,[x4,y4]=L2.b;const d1x=x2-x1,d1y=y2-y1,d2x=x4-x3,d2y=y4-y3;
+  const den=d1x*d2y-d1y*d2x;const l1=Math.hypot(d1x,d1y),l2=Math.hypot(d2x,d2y);if(!l1||!l2)return null;const sin=Math.abs(den)/(l1*l2);if(sin<0.17)return null;
+  const u=((x3-x1)*d2y-(y3-y1)*d2x)/den;return {p:[x1+u*d1x,y1+u*d1y],sin}}
+// kruispunt van de pijl-lijnen van alle camera's (zelfde idee als in patentaanvraag US 2025/0093134)
+function fuseLines(C){const X=[];for(let a=0;a<C.length;a++)for(let b=a+1;b<C.length;b++){const r=lineX(C[a].line,C[b].line);if(!r)continue;
+    if(Math.hypot(r.p[0],r.p[1])>260)continue;X.push({p:r.p,w:C[a].w*C[b].w*r.sin,pair:[C[a].i,C[b].i]})}
+  if(!X.length)return null;
+  let pts=X.slice();for(let it=0;it<3&&pts.length>2;it++){const sw=pts.reduce((s,q)=>s+q.w,0);const mx=pts.reduce((s,q)=>s+q.p[0]*q.w,0)/sw,my=pts.reduce((s,q)=>s+q.p[1]*q.w,0)/sw;
+    const far=pts.map(q=>Math.hypot(q.p[0]-mx,q.p[1]-my));const worst=far.indexOf(Math.max(...far));if(far[worst]>12)pts.splice(worst,1);else break}
+  const sw=pts.reduce((s,q)=>s+q.w,0);const mm=[pts.reduce((s,q)=>s+q.p[0]*q.w,0)/sw,pts.reduce((s,q)=>s+q.p[1]*q.w,0)/sw];
+  const spread=X.length>1?Math.max(...pts.map(q=>Math.hypot(q.p[0]-mm[0],q.p[1]-mm[1]))):0;
+  return {mm,spread,n:pts.length,all:X.length}}
+function fuse(lists){lists=lists.map(l=>({i:l.i,c:l.c.ends||l.c}));
   if(!lists.length)return null;
   if(lists.length===1)return {mm:lists[0].c[0].mm,spread:null};
   let best=null,bs=Infinity;
@@ -1467,7 +1503,7 @@ function fuse(lists){
 }
 function need20(){return activeCams().some(i=>DB.cams[i].need20)}
 function fix20(ids){let n=0;
-  for(const i of ids){const rt=CAMRT[i];if(!DB.cams[i].need20||rt.chg<=DB.set.minPx)continue;const c=tipCands(i);if(!c)continue;
+  for(const i of ids){const rt=CAMRT[i];if(!DB.cams[i].need20||rt.chg<=DB.set.minPx)continue;const c0=tipCands(i);if(!c0)continue;const c=c0.ends;
     const cand=c.map(x=>({x,r:Math.hypot(x.mm[0],x.mm[1])})).filter(o=>o.r>16&&o.r<175).sort((a,b)=>a.r-b.r)[0];if(!cand)continue;
     rt.last=cand.x.px;const ang=Math.atan2(cand.x.mm[1],cand.x.mm[0])*180/Math.PI;let k=Math.round((90-ang)/36);
     if(((k%10)+10)%10){const rot=-36*k*Math.PI/180,cr=Math.cos(rot),sr=Math.sin(rot);
@@ -1477,18 +1513,25 @@ function fix20(ids){let n=0;
   DET.info=need20()?'Nog niet alle camera\'s zagen de pijl. Gooi nog een pijl in de 20.':'Richting vastgelegd. Haal de pijl eruit, dan ben je klaar.';
   if(VIEW==='cams')renderCams();updateDetState();toast(need20()?'Richting deels vastgelegd':'Kalibratie klaar')}
 function detectDart(ids){if(need20()){fix20(ids);return}
-  const lists=[];for(const i of ids){const rt=CAMRT[i];if(rt.chg<=DB.set.minPx)continue;const c=tipCands(i);rt.lastCands=c;if(c)lists.push({i,c})}
+  const MP=DB.set.minPx*PXF;const C=[];const why=[];
+  for(const i of ids){const rt=CAMRT[i];if(rt.chg<=MP){why.push('cam '+(i+1)+': niets');continue}const c=tipCands(i);rt.lastCands=c?c.ends:null;if(c)C.push(c);else why.push('cam '+(i+1)+': '+(rt.reject||'?'))}
   const need=Math.min(2,ids.length);
-  if(lists.length<need){DET.info='Genegeerd: maar '+lists.length+' camera zag iets';DET.ignored=(DET.ignored||0)+1;return}
-  const f=fuse(lists);if(!f)return;
-  if(need>=2&&f.spread!=null&&f.spread>22){DET.info='Genegeerd: camera\'s zijn het oneens ('+Math.round(f.spread)+' mm)';DET.ignored=(DET.ignored||0)+1;return}
-  const mm=f.mm||f;lists.forEach(l=>{const u=l.c.find(x=>x.used)||l.c[0];CAMRT[l.i].last=u.px});
+  if(C.length<need){DET.info='Genegeerd ('+why.join(', ')+')';DET.ignored=(DET.ignored||0)+1;logDet({ign:why.join(', ')});return}
+  let mm=null,how='';
+  if(C.length>=2){const f=fuseLines(C);if(f&&f.spread<=18){mm=f.mm;how='lijnen '+f.n+'/'+f.all+(f.spread?' ±'+Math.round(f.spread)+'mm':'')}}
+  if(!mm){const f=fuse(C.map(c=>({i:c.i,c})));if(f&&(C.length<2||f.spread==null||f.spread<=22)){mm=f.mm;how='punten'}else{DET.info='Genegeerd: camera\'s zijn het oneens';DET.ignored=(DET.ignored||0)+1;logDet({ign:'oneens'});return}}
+  C.forEach(c=>{const e=c.ends.slice().sort((a,b)=>Math.hypot(a.mm[0]-mm[0],a.mm[1]-mm[1])-Math.hypot(b.mm[0]-mm[0],b.mm[1]-mm[1]))[0];CAMRT[c.i].last=e.px});
   const [x,y]=mm;if(Math.hypot(x,y)>235)return;
-  const s=scoreAt(x,y);const d={n:s.n,m:s.m,x,y,src:'cam'};DET.info='Pijl gezien: '+lbl(d);
+  const s=scoreAt(x,y);const d={n:s.n,m:s.m,x,y,src:'cam'};DET.info='Pijl gezien: '+lbl(d)+' ('+how+')';logDet({x,y,how,cams:C.length});
   if(DET.test&&VIEW==='cams'){DET.testHits.push(d);if(DET.testHits.length>3)DET.testHits.shift();paintTest()}
   if(BULL.active){bullDart(d);return}
   if(DET.active&&MATCH&&!MATCH.saved){if(ST.done||isGuestTurn()||isBotTurn())return;addDart(d)}
 }
+// logboek van herkenning + correcties, om de nauwkeurigheid te meten
+function detSummary(){const L=DB.set.detlog||[];const seen=L.filter(e=>e.x!=null).length,ign=L.filter(e=>e.ign).length,fx=L.filter(e=>e.fix);
+  if(!L.length)return '<span class="muted">Nog geen herkenningen gelogd. Verbeter een verkeerd geteld pijl tijdens het spel met <b>Laatste pijl verbeteren</b>, dan zie je hier hoe nauwkeurig de camera\'s zijn.</span>';
+  const errs=fx.map(e=>e.err).sort((a,b)=>a-b);return `Herkend: <b>${seen}</b> · genegeerd: <b>${ign}</b> · verbeterd: <b>${fx.length}</b>${errs.length?` (mediaan ${errs[Math.floor(errs.length/2)]} mm ernaast)`:''}`}
+function logDet(e){try{const L=DB.set.detlog=DB.set.detlog||[];e.t=Date.now();L.push(e);if(L.length>300)L.splice(0,L.length-300);save()}catch(x){}}
 function onTakeout(){if(isGuestTurn()||isBotTurn())return;
   if(DET.test){DET.testHits=[];paintTest()}
   if(DET.active&&MATCH&&!MATCH.saved){const t=curTurn();if(t&&!t.closed&&t.darts.length)nextTurn()}
@@ -1512,6 +1555,7 @@ function drawCam(i,cv,big){
       SECT.forEach((n,k)=>{const a=(90-k*18)*Math.PI/180;const [x,y]=pt(190*Math.cos(a),190*Math.sin(a));ctx.fillStyle=n===20?'#4fe3ff':'#f25a2c';ctx.strokeText(n,x,y);ctx.fillText(n,x,y)})}}
   if(big){(CALIB.i===i?CALIB.pts:(DB.cams[i].pts||[])).forEach((p,k)=>{ctx.fillStyle='#f25a2c';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p[0]*W,p[1]*H,7,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='left';ctx.fillText(CAL[k].lab,p[0]*W+10,p[1]*H-8)})}
   if(rt.lastCands&&big){rt.lastCands.forEach(c=>{ctx.strokeStyle='rgba(255,255,255,.6)';ctx.beginPath();ctx.arc(c.px[0]/rt.PW*W,c.px[1]/rt.PH*H,6,0,7);ctx.stroke()})}
+  if(big&&rt.lastLine){ctx.strokeStyle='rgba(80,200,255,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(rt.lastLine[0][0]/rt.PW*W,rt.lastLine[0][1]/rt.PH*H);ctx.lineTo(rt.lastLine[1][0]/rt.PW*W,rt.lastLine[1][1]/rt.PH*H);ctx.stroke()}
   if(rt.last){ctx.strokeStyle='#ff5a4a';ctx.lineWidth=2;const x=rt.last[0]/rt.PW*W,y=rt.last[1]/rt.PH*H;ctx.beginPath();ctx.moveTo(x-10,y);ctx.lineTo(x+10,y);ctx.moveTo(x,y-10);ctx.lineTo(x,y+10);ctx.stroke()}
   if(big&&CALIB.i===i&&CALIB.hover){const [hx,hy]=CALIB.hover;const Z=3,S=150;const zx=hx*W,zy=hy*H;ctx.save();ctx.fillStyle='#000';ctx.fillRect(8,8,S+4,S+4);
     ctx.drawImage(v,sx+(zx-S/(2*Z))*sw/W,sy+(zy-S/(2*Z))*sh/H,S/Z*sw/W,S/Z*sh/H,10,10,S,S);ctx.strokeStyle='#f25a2c';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(10+S/2,10);ctx.lineTo(10+S/2,10+S);ctx.moveTo(10,10+S/2);ctx.lineTo(10+S,10+S/2);ctx.stroke();ctx.restore()}
@@ -1544,6 +1588,7 @@ function renderCams(){
     <div class="box stack"><h3>Detectie testen</h3>
       <label class="row"><input type="checkbox" id="testmode" ${DET.test?'checked':''}> Testmodus aan</label>
       <div class="boardwrap" style="max-width:280px">${boardSVG('tboard')}</div><div id="testinfo" class="dstate"></div>
+      <div class="small">${detSummary()}</div>
       <div class="small muted">Gooi een pijl: het rode kruis in elk camerabeeld en de stip op het bord tonen wat er herkend is. Haal je de pijlen eruit, dan reset de test.</div></div>
    </div>
    <div class="cams">${[0,1,2].map(i=>{const c=DB.cams[i],rt=CAMRT[i];return `<div class="box cam" data-i="${i}">
