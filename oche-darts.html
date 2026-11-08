@@ -375,6 +375,9 @@ main:has(#groot){max-width:none;padding-block:10px}
 .tbs{display:flex;justify-content:center;align-items:center;color:var(--line);height:100%}
 .tbs svg{width:64px;height:16px}
 .tbs b{font-family:var(--f-display);font-weight:800;font-size:34px;color:var(--fg);letter-spacing:.02em}
+#dstate{display:none}
+.tbs em{font-style:normal;font-family:var(--f-display);font-weight:800;font-size:28px;color:var(--muted);border:1.5px dashed var(--line);border-radius:10px;padding:2px 10px;letter-spacing:.02em}
+.tbs.now em{color:var(--accent);border:1.5px solid var(--accent);background:#fff4ef}
 .tbs.pop{animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
 .tb-sum{border-left:1px solid var(--line);min-width:110px;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:46px;padding:0 18px}
 .tb-sum.bust{color:var(--red)}
@@ -989,7 +992,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1620';
+const APPV='1630';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -1002,7 +1005,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 16:20</div>
+   <div class="small muted">Versie 8 nov 16:30</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1523,8 +1526,10 @@ function updateGame(G){
     $('.hist',c).innerHTML=ST.hist[i].slice(-5).map(h=>'<span>'+esc(h)+'</span>').join('');});
   if(GDOM.prevCur!==ST.cur&&cards[ST.cur]){cards[ST.cur].classList.remove('enter');void cards[ST.cur].offsetWidth;cards[ST.cur].classList.add('enter');GDOM.prevCur=ST.cur}
   // beurtbalk
-  const tb=$$('#tbd .tbs');tb.forEach((el,k)=>{const d=ST.tdarts[k];const txt=d?lbl(d):'';if(el.dataset.t!==txt){el.dataset.t=txt;
-    el.innerHTML=d?`<b>${d.m?(d.n===25?(d.m===2?'BULL':'25'):(['','S','D','T'][d.m]+d.n)):'MISS'}</b>`:'<svg viewBox="0 0 64 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="currentColor"/><path d="M14 8h40M44 4l10 4-10 4" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
+  const plan=MATCH.game==='x01'&&!ST.done?coPlan(ST):null;const pd=plan?(plan.kind==='finish'?plan.darts:[plan.t]):[];
+  const tb=$$('#tbd .tbs');tb.forEach((el,k)=>{const d=ST.tdarts[k];const pl=!d&&pd[k-ST.tdarts.length];const txt=d?lbl(d):pl?'p'+lbl(pl)+(k===ST.tdarts.length?'*':''):'';
+    el.classList.toggle('plan',!!pl);el.classList.toggle('now',!!pl&&k===ST.tdarts.length);el.title=pl&&plan.kind==='setup'?'Geen finish: gooi '+lbl(pl)+', laat '+plan.leave+' staan':'';if(el.dataset.t!==txt){el.dataset.t=txt;
+    el.innerHTML=pl?`<em>${lbl(pl)}</em>`:d?`<b>${d.m?(d.n===25?(d.m===2?'BULL':'25'):(['','S','D','T'][d.m]+d.n)):'MISS'}</b>`:'<svg viewBox="0 0 64 16" aria-hidden="true"><circle cx="8" cy="8" r="6" fill="currentColor"/><path d="M14 8h40M44 4l10 4-10 4" stroke="currentColor" stroke-width="2" fill="none"/></svg>';
     el.classList.toggle('f',!!d);if(d){el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}}});
   const ts=$('#tbsum');tween(ts,ST.tpts||0);ts.classList.toggle('bust',ST.msg==='Bust');
   const panel=G.panel?'<div class="box">'+G.panel(ST)+'</div>':'';
@@ -1534,7 +1539,7 @@ function updateGame(G){
   if(ST.over)r.innerHTML='';
   else if(ST.done)r.innerHTML=`<span class="rtext">${MATCH.input==='cam'?'Pijlen eruit halen':'Volgende beurt'}</span>`;
   else{const plan=MATCH.game==='x01'&&!isGuestTurn()?coPlan(ST):null;
-    if(plan){const done=ST.tdarts.map(d=>`<span class="cod done">${lbl(d)}</span>`).join('');
+    if(plan&&false){const done=ST.tdarts.map(d=>`<span class="cod done">${lbl(d)}</span>`).join('');
       r.innerHTML=plan.kind==='finish'?`<div class="cobar"><span class="colab">Uitgooien<b>${plan.rem}</b></span>${done}${plan.darts.map((d,k)=>`<span class="cod ${k===0?'now':''} ${d.m===2||(d.n===25&&d.m===2)?'dbl':''}">${lbl(d)}</span>`).join('')}</div>`
         :`<div class="cobar setup"><span class="colab">Geen finish<b>${plan.rem}</b></span>${done}<span class="cod now">${lbl(plan.t)}</span><span class="coleave">laat <b>${plan.leave}</b> staan voor je volgende beurt</span></div>`}
     else{const h=G.sugg?'':(G.hint(ST)||'');r.innerHTML=h?`<span class="rtext">${esc(h)}</span>`:''}}
@@ -1912,7 +1917,7 @@ function onTakeout(){if(isGuestTurn()||isBotTurn())return;
   if(DET.test){DET.testHits=[];paintTest()}
   if(DET.active&&MATCH&&!MATCH.saved){const t=curTurn();if(t&&!t.closed&&t.darts.length)nextTurn()}
 }
-function updateDetState(){const el=$('#dstate');if(el)el.textContent=DET.info;const t=$('#testinfo');if(t)t.textContent=DET.info;updateChip()}
+function updateDetState(){const el=$('#dstate');if(el)el.textContent='';const ctb=$('#camtoggle');if(ctb&&DET.info)ctb.title=DET.info;const t=$('#testinfo');if(t)t.textContent=DET.info;updateChip()}
 function updateChip(){const n=CAMRT.filter(r=>r.stream).length,k=activeCams().length;const c=$('#camchip');
   c.className='chip '+(k&&!need20()?'ok':n?'warn':'');c.querySelector('span').textContent=k&&need20()?'Gooi een pijl in de 20':k?k+' camera'+(k>1?'\'s':'')+' actief':n?n+' aan, niet gekalibreerd':'Camera\'s uit'}
 setInterval(tick,110);
