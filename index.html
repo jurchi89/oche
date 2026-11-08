@@ -911,7 +911,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1700';
+const APPV='1735';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -924,7 +924,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 17:00</div>
+   <div class="small muted">Versie 8 nov 17:35</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1261,7 +1261,8 @@ function addDart(d){
   if(isBotTurn()&&d.src!=='bot')return;
   let t=curTurn();
   if(!t||t.closed){t={darts:[],closed:false};MATCH.turns.push(t)}
-  else if(ST.done){t.closed=true;afterClose();t={darts:[],closed:false};MATCH.turns.push(t)}
+  else if(ST.done){tdConfirm(t);t.closed=true;afterClose();t={darts:[],closed:false};MATCH.turns.push(t)}
+  if(d.src!=='cam'&&d.src!=='bot')tdMissed(d);
   t.darts.push(d);refresh();fxDart(d);
   if(ST.msg==='Bust'){say('Bust');callout('Bust','bust');if(callerOn()&&MATCH.game==='x01')callScore(0)}
   else if(ST.msg&&ST.msg!=='Game shot')callout(ST.msg,'high');
@@ -1269,7 +1270,7 @@ function addDart(d){
 function nextTurn(fromBot){
   if(!MATCH||ST.over)return;if(isBotTurn()&&!fromBot)return;const t=curTurn();if(!t||t.closed||!t.darts.length)return;
   while(!ST.done&&t.darts.length<3){t.darts.push({n:0,m:0});ST=runMatch(MATCH)}
-  t.closed=true;afterClose();refresh();
+  tdConfirm(t);t.closed=true;afterClose();refresh();
 }
 function afterClose(){
   // stem: X01-beurtscore
@@ -1279,14 +1280,14 @@ function afterClose(){
 function undo(){
   if(!MATCH||MATCH.saved)return;if(isBotTurn()){toast('De DartBot gooit nu');return}let t=curTurn();
   if(t&&!t.darts.length){MATCH.turns.pop();t=curTurn()}
-  if(!t)return;t.closed=false;t.darts.pop();if(!t.darts.length)MATCH.turns.pop();
+  if(!t)return;t.closed=false;const od=t.darts.pop();if(od&&od.rid)tdRemoved(od);if(!t.darts.length)MATCH.turns.pop();
   refresh();
 }
 let CALLREQ=false;
 function refresh(){ST=runMatch(MATCH);if(ST.over)finishMatch();renderGame();
   if(CALLREQ){CALLREQ=false;if(MATCH&&MATCH.game==='x01'&&!ST.over&&!ST.tdarts.length){const p=ST.players[ST.cur];const a=actor();if(p.in&&p.score<=170&&checkout(p.score,3,ST.o.out))setTimeout(()=>callRequire(a?a.name:'',p.score),1700)}}}
 function finishMatch(){
-  if(MATCH.saved)return;const G=GAMES[MATCH.game];
+  if(MATCH.saved)return;{const t=curTurn();if(t)tdConfirm(t)}const G=GAMES[MATCH.game];
   const rec={id:MATCH.id,date:MATCH.date,game:MATCH.game,opts:MATCH.opts,
     pids:MATCH.players.map(p=>p.id),names:MATCH.players.map(p=>p.name),winner:ST.winner!=null?MATCH.players[ST.winner].id:null,
     sum:MATCH.players.map((p,i)=>G.sum(ST,i)),
@@ -1317,7 +1318,12 @@ function genericRows(rec){const S=rec.sum;const r=(l,f)=>'<tr><td>'+l+'</td>'+S.
   if(S[0].tries!=null)h+=r('Uitgooien gehaald',s=>s.hits+'/'+s.tries);
   return h}
 
-let GDOM=null;const FIX={on:false};
+let GDOM=null;const FIX={on:false,k:null};
+function fixAt(x,y){FIX.on=false;const g=$('#gboard');if(g)g.classList.remove('fixing');const t=curTurn();if(!t||!t.darts.length)return false;
+  const k=FIX.k!=null&&t.darts[FIX.k]?FIX.k:t.darts.length-1;FIX.k=null;const o=t.darts[k],s=scoreAt(x,y);
+  if(o.src==='cam')logDet({fix:[+x.toFixed(1),+y.toFixed(1)],was:[+(o.x||0).toFixed(1),+(o.y||0).toFixed(1)],err:+Math.hypot(x-(o.x||0),y-(o.y||0)).toFixed(1)});
+  if(o.rid)tdLabel(o.rid,{n:s.n,m:s.m,x,y},'cor');
+  t.darts[k]={n:s.n,m:s.m,x,y,src:'fix'};t.closed=false;refresh();toast('Pijl '+(k+1)+' verbeterd naar '+lbl(s));return true}
 function renderGame(){
   const G=GAMES[MATCH.game];const host=$('#v-play');
   if(!GDOM||!host.contains(GDOM.root)||GDOM.mid!==MATCH.id)buildGame(G);
@@ -1377,20 +1383,20 @@ function buildGame(G){
   $('#fs').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){toast('Volledig scherm lukt hier niet')}};
   $('#sfx').onchange=e=>{DB.set.sfx=e.target.checked;save()};
   $('#camtoggle').onclick=()=>{if(MATCH.input==='cam'){MATCH.input='manual';DET.active=false;}else{MATCH.input='cam';startAllCams().then(()=>{resetRefs();DET.active=true})}renderGame()};
-  $('#tbd').onclick=()=>undo();
+  // klik op een pijl in de beurtbalk = die pijl verbeteren (klik daarna op het bord waar hij echt zit)
+  $('#tbd').onclick=e=>{const s=e.target.closest('.tbs');const t=curTurn();const k=s?[...s.parentNode.children].indexOf(s):-1;
+    if(k>=0&&t&&!t.closed&&t.darts[k]&&!isBotTurn()){FIX.on=true;FIX.k=k;$('#gboard').classList.add('fixing');toast('Klik op het bord waar pijl '+(k+1)+' echt zit');return}undo()};
   $('#viewseg').onclick=e=>{const b=e.target.closest('button');if(!b)return;const v=b.dataset.v;
     if(v!=='board'&&!CAMRT.some(r=>r.stream)){toast('Zet eerst de camera\'s aan (cameraknop boven het bord)');return}
     if(v!=='board'&&!activeCams().length){toast('Kalibreer eerst je camera\'s');return}
     DB.set.centerView=v;save();applyCenterView()};
-  $('#liveov').addEventListener('click',e=>{if((DB.set.centerView||'board')!=='live')return;const sv=$('#liveov');const pt=sv.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(sv.getScreenCTM().inverse());const x=q.x,y=-q.y;if(Math.hypot(x,y)>225)return;const sc=scoreAt(x,y);addDart({n:sc.n,m:sc.m,x,y,src:'click'})});
+  $('#liveov').addEventListener('click',e=>{if((DB.set.centerView||'board')!=='live')return;const sv=$('#liveov');const pt=sv.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(sv.getScreenCTM().inverse());const x=q.x,y=-q.y;if(Math.hypot(x,y)>225)return;if(FIX.on&&fixAt(x,y))return;const sc=scoreAt(x,y);addDart({n:sc.n,m:sc.m,x,y,src:'click'})});
   $('#thumbs').onclick=()=>openCamOverlay();
   $('#selfx').onclick=()=>{$('#selfcam').hidden=true;GDOM.selfHidden=true};
   const svg=$('#gboard');svg.addEventListener('click',e=>{const [x,y]=svgToMM(svg,e);if(Math.hypot(x,y)>225)return;const s=scoreAt(x,y);
-    if(FIX.on){FIX.on=false;svg.classList.remove('fixing');const t=curTurn();if(t&&t.darts.length){const o=t.darts[t.darts.length-1];
-        if(o.src==='cam')logDet({fix:[+x.toFixed(1),+y.toFixed(1)],was:[+(o.x||0).toFixed(1),+(o.y||0).toFixed(1)],err:+Math.hypot(x-(o.x||0),y-(o.y||0)).toFixed(1)});
-        t.darts[t.darts.length-1]={n:s.n,m:s.m,x,y,src:'fix'};t.closed=false;refresh();toast('Verbeterd naar '+lbl(s));return}}
+    if(FIX.on&&fixAt(x,y))return;
     addDart({n:s.n,m:s.m,x,y,src:'click'})});
-  $('#fixlast').onclick=()=>{const t=curTurn();if(!t||!t.darts.length){toast('Er is nog geen pijl in deze beurt');return}FIX.on=true;svg.classList.add('fixing');toast('Klik op het bord waar de pijl echt zit')};
+  $('#fixlast').onclick=()=>{const t=curTurn();if(!t||!t.darts.length){toast('Er is nog geen pijl in deze beurt');return}FIX.on=true;FIX.k=null;svg.classList.add('fixing');toast('Klik op het bord waar de pijl echt zit')};
   paintMult();
 }
 function tween(el,to){
@@ -1731,22 +1737,59 @@ function fix20(ids){let n=0;
   DET.info=need20()?'Nog niet alle camera\'s zagen de pijl. Gooi nog een pijl in de 20.':'Richting vastgelegd. Haal de pijl eruit, dan ben je klaar.';
   if(VIEW==='cams')renderCams();updateDetState();toast(need20()?'Richting deels vastgelegd':'Kalibratie klaar')}
 function detectDart(ids){if(need20()){fix20(ids);return}
-  const MP=DB.set.minPx*PXF;const C=[];const why=[];ids.forEach(i=>CAMRT[i].pend=null);
+  const MP=DB.set.minPx*PXF;const C=[];const why=[];ids.forEach(i=>CAMRT[i].pend=null);const snap=tdSnap(ids);
   for(const i of ids){const rt=CAMRT[i];if(rt.chg<=MP){why.push('cam '+(i+1)+': niets');continue}const c=tipCands(i);rt.lastCands=c?c.ends:null;if(c)C.push(c);else why.push('cam '+(i+1)+': '+(rt.reject||'?'))}
   const need=Math.min(2,ids.length);
-  if(C.length<need){DET.info='Genegeerd ('+why.join(', ')+')';DET.ignored=(DET.ignored||0)+1;logDet({ign:why.join(', ')});recDet(ids,C,null,why.join(', '));ids.forEach(i=>CAMRT[i].pend=null);return}
+  if(C.length<need){DET.info='Genegeerd ('+why.join(', ')+')';DET.ignored=(DET.ignored||0)+1;logDet({ign:why.join(', ')});recDet(ids,C,null,why.join(', '));tdRecord(snap,null,why.join(', '));ids.forEach(i=>CAMRT[i].pend=null);return}
   let mm=null,how='';
   if(C.length>=2){const f=fuseLS(C);if(f){mm=f.mm;how='lijnen '+f.n+'/'+f.all+' ±'+f.spread.toFixed(1)+'mm'}}
   else if(C.length===1&&ids.length===1){mm=C[0].ends[0].mm;how='1 camera'}
-  if(!mm){DET.info='Genegeerd: camera\'s zijn het oneens';DET.ignored=(DET.ignored||0)+1;logDet({ign:'oneens'});recDet(ids,C,null,'oneens');ids.forEach(i=>CAMRT[i].pend=null);return}
+  if(!mm){DET.info='Genegeerd: camera\'s zijn het oneens';DET.ignored=(DET.ignored||0)+1;logDet({ign:'oneens'});recDet(ids,C,null,'oneens');tdRecord(snap,null,'oneens');ids.forEach(i=>CAMRT[i].pend=null);return}
   commitOld(ids);
   C.forEach(c=>{const e=c.ends.slice().sort((a,b)=>Math.hypot(a.mm[0]-mm[0],a.mm[1]-mm[1])-Math.hypot(b.mm[0]-mm[0],b.mm[1]-mm[1]))[0];CAMRT[c.i].last=e.px});
   const [x,y]=mm;if(Math.hypot(x,y)>235)return;
-  const s=scoreAt(x,y);const d={n:s.n,m:s.m,x,y,src:'cam'};DET.info='Pijl gezien: '+lbl(d)+' ('+how+')';logDet({x,y,how,cams:C.length});recDet(ids,C,[x,y],lbl(d)+' '+how);
+  const s=scoreAt(x,y);const d={n:s.n,m:s.m,x,y,src:'cam'};d.rid=tdRecord(snap,d,how);DET.info='Pijl gezien: '+lbl(d)+' ('+how+')';logDet({x,y,how,cams:C.length});recDet(ids,C,[x,y],lbl(d)+' '+how);
   if(DET.test&&VIEW==='cams'){DET.testHits.push(d);if(DET.testHits.length>3)DET.testHits.shift();paintTest()}
   if(BULL.active){bullDart(d);return}
   if(DET.active&&MATCH&&!MATCH.saved){if(ST.done||isGuestTurn()||isBotTurn())return;addDart(d)}
 }
+// ---------- trainingsdata: elke camerapijl in een spel met beelden + het juiste antwoord (IndexedDB) ----------
+// goed = beurt doorgegeven zonder correctie; verbeterd = via beurtbalk/'Laatste pijl verbeteren'; gemist = camera negeerde hem en jij tikte hem in
+const TD={p:null,ign:null,pp:{}};
+function tdOpen(){if(!TD.p)TD.p=new Promise(res=>{try{const r=indexedDB.open('oche-train',1);r.onupgradeneeded=()=>r.result.createObjectStore('darts',{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}});return TD.p}
+async function tdTx(mode,f){const db=await tdOpen();if(!db)return null;return new Promise(res=>{try{const tx=db.transaction('darts',mode),st=tx.objectStore('darts');const r=f(st);tx.oncomplete=()=>res(r&&r.result);tx.onerror=()=>res(null)}catch(e){res(null)}})}
+async function tdPatch(id,p){TD.pp[id]=Object.assign(TD.pp[id]||{},p);const db=await tdOpen();if(!db)return;try{const tx=db.transaction('darts','readwrite'),st=tx.objectStore('darts');const r=st.get(id);r.onsuccess=()=>{if(r.result)st.put(Object.assign(r.result,p))}}catch(e){}}
+function tdCount(k,d){const c=DB.set.tdc=DB.set.tdc||{n:0,ok:0,cor:0,mis:0,rem:0};c[k]=(c[k]||0)+d;save()}
+function tdOn(){return DB.set.tdOn!==false&&!!MATCH&&!MATCH.saved&&DET.active}
+function tdSnap(ids){if(!tdOn())return null;return ids.map(i=>{const rt=CAMRT[i];return rt.ref&&rt.cur?{i,W:rt.PW,H:rt.PH,ref:new Uint8Array(rt.ref),cur:new Uint8Array(rt.cur),old:rt.old?new Uint8Array(rt.old):null}:null}).filter(Boolean)}
+function grayURL(a,W,H,png){const c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');const im=x.createImageData(W,H);for(let k=0,j=0;k<a.length;k++,j+=4){im.data[j]=im.data[j+1]=im.data[j+2]=a[k];im.data[j+3]=255}x.putImageData(im,0,0);return png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',0.93)}
+function tdRecord(snap,d,how){if(!snap||!snap.length)return null;const id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);const [turn,k]=tdPos();
+  const rec={id,t:Date.now(),match:MATCH.id,turn,k,res:d?{n:d.n,m:d.m,x:+d.x.toFixed(1),y:+d.y.toFixed(1)}:null,how:how||'',ign:!d,label:null,st:'pending',app:APPV,thr:DB.set.thr,minPx:DB.set.minPx,cams:{}};
+  setTimeout(()=>{try{for(const s of snap){const rt=CAMRT[s.i];let col=null;try{const v=rt.stream.video,c=document.createElement('canvas');c.width=480;c.height=360;c.getContext('2d').drawImage(v,0,0,480,360);col=c.toDataURL('image/jpeg',0.8)}catch(e){}
+      rec.cams[s.i]={W:s.W,H:s.H,ref:grayURL(s.ref,s.W,s.H),cur:grayURL(s.cur,s.W,s.H),old:s.old?grayURL(s.old.map(v=>v?255:0),s.W,s.H,true):null,col,pts:DB.cams[s.i].pts,crop:DB.cams[s.i].crop||'full'}}
+    if(TD.pp[id])Object.assign(rec,TD.pp[id]);tdTx('readwrite',st=>st.put(rec));tdCount('n',1)}catch(e){}},0);
+  if(!d)TD.ign={id,turn,t:Date.now()};return id}
+function tdPos(){const t=curTurn();const open=t&&!t.closed&&!ST.done;return open?[MATCH.turns.length-1,t.darts.length]:[MATCH.turns.length,0]}
+function tdLabel(id,label,st){tdPatch(id,{label,st});tdCount(st,1)}
+function tdConfirm(t){if(!t)return;t.darts.forEach(d=>{if(d.rid&&d.src==='cam'&&!d.tdok){d.tdok=1;tdLabel(d.rid,{n:d.n,m:d.m},'ok')}})}
+function tdMissed(d){const g=TD.ign;if(!g||!MATCH||Date.now()-g.t>60000||g.turn!==tdPos()[0])return;TD.ign=null;tdLabel(g.id,{n:d.n,m:d.m,x:d.x,y:d.y},'mis')}
+function tdRemoved(d){tdPatch(d.rid,{st:'removed'});tdCount('rem',1);setTimeout(()=>{if(MATCH)TD.ign={id:d.rid,turn:tdPos()[0],t:Date.now()}},0)}
+function tdSummary(){const c=DB.set.tdc||{};return `Trainingsdata: <b>${c.n||0}</b> pijlen opgeslagen · goed <b>${c.ok||0}</b> · verbeterd <b>${c.cor||0}</b> · gemist <b>${c.mis||0}</b>`}
+async function tdExport(){toast('Trainingsdata klaarzetten…');const all=await tdTx('readonly',st=>st.getAll())||[];if(!all.length){toast('Nog geen trainingsdata');return}
+  const b=new Blob([JSON.stringify({app:APPV,date:new Date().toISOString(),cams:DB.cams.map(c=>({pts:c.pts,crop:c.crop||'full'})),darts:all})],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='oche-trainingsdata-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)}
+// opnieuw herkennen op de opgeslagen beelden (om de herkenning te verbeteren en te meten): tdEval().then(console.log)
+function tdGray(url){return new Promise(res=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);const d=x.getImageData(0,0,im.width,im.height).data;const g=new Uint8Array(im.width*im.height);for(let k=0;k<g.length;k++)g[k]=d[k*4];res(g)};im.onerror=()=>res(null);im.src=url})}
+async function tdEval(opt={}){const all=(await tdTx('readonly',st=>st.getAll())||[]).filter(r=>r.label&&(opt.filter?opt.filter(r):true)).sort((a,b)=>a.t-b.t);const out=[];
+  for(const r of all){const ids=Object.keys(r.cams).map(Number).filter(i=>CAMRT[i]&&CAMRT[i].H);const saved={};
+    for(const i of ids){const rt=CAMRT[i],c=r.cams[i];saved[i]={ref:rt.ref,cur:rt.cur,old:rt.old,pend:rt.pend};const [ref,cur,old]=await Promise.all([tdGray(c.ref),tdGray(c.cur),c.old?tdGray(c.old):null]);rt.ref=ref;rt.cur=cur;rt.old=old?old.map(v=>v>127?1:0):null}
+    const C=[];for(const i of ids){const c=(opt.tip||tipCands)(i);if(c)C.push(c)}const f=C.length>=2?(opt.fuse||fuseLS)(C):null;
+    for(const i of ids)Object.assign(CAMRT[i],saved[i]);
+    const s=f?scoreAt(f.mm[0],f.mm[1]):null;const L=r.label;const ok=s&&s.n===L.n&&s.m===L.m;const err=f&&L.x!=null?Math.hypot(f.mm[0]-L.x,f.mm[1]-L.y):null;
+    out.push({id:r.id,k:r.k,st:r.st,label:lbl(L),got:s?lbl(s):'-',ok,err,cams:C.length})}
+  const by=k=>{const o=out.filter(x=>x.k===k);return o.length?Math.round(100*o.filter(x=>x.ok).length/o.length)+'% van '+o.length:'-'};
+  return {totaal:Math.round(100*out.filter(x=>x.ok).length/Math.max(1,out.length))+'% van '+out.length,pijl1:by(0),pijl2:by(1),pijl3:by(2),fout:out.filter(x=>!x.ok)}}
+async function tdClear(){await tdTx('readwrite',st=>st.clear());DB.set.tdc={n:0,ok:0,cor:0,mis:0,rem:0};save();toast('Trainingsdata gewist')}
 // laatste 30 herkenningen met camerabeelden (alleen in het geheugen), om fouten te kunnen analyseren
 const DETREC=[];function recDet(ids,C,mm,res){try{const o={t:new Date().toLocaleTimeString('nl'),res,mm,cams:{}};
   for(const i of ids){const rt=CAMRT[i];const v=rt.stream&&rt.stream.video;if(!v)continue;const c=document.createElement('canvas');c.width=480;c.height=360;c.getContext('2d').drawImage(v,0,0,480,360);
@@ -1825,6 +1868,9 @@ function renderCams(){
       <label class="row"><input type="checkbox" id="testmode" ${DET.test?'checked':''}> Testmodus aan</label>
       <div class="boardwrap" style="max-width:280px">${boardSVG('tboard')}</div><div id="testinfo" class="dstate"></div>
       <div class="small">${detSummary()}</div>
+      <div class="small">${tdSummary()}</div>
+      <label class="row small"><input type="checkbox" id="tdon" ${DB.set.tdOn!==false?'checked':''}> Trainingsdata verzamelen tijdens het spelen</label>
+      <div class="row"><button class="btn" id="tdexp">Trainingsdata exporteren</button><button class="btn" id="tdclr">Wissen</button></div>
       <div class="small muted">Gooi een pijl: het rode kruis in elk camerabeeld en de stip op het bord tonen wat er herkend is. Haal je de pijlen eruit, dan reset de test.</div></div>
    </div>
    <div class="cams">${[0,1,2].map(i=>{const c=DB.cams[i],rt=CAMRT[i];return `<div class="box cam" data-i="${i}">
@@ -1843,6 +1889,8 @@ function renderCams(){
   $('#res').onchange=e=>{DB.set.res=e.target.value;save();stopAll();toast('Resolutie aangepast. Start de camera\'s opnieuw.');renderCams()};
   $('#thr').oninput=e=>{DB.set.thr=+e.target.value;save();e.target.previousSibling.textContent='Gevoeligheid (drempel '+DB.set.thr+')'};
   $('#minpx').oninput=e=>{DB.set.minPx=+e.target.value;save();e.target.previousSibling.textContent='Minimale pijlgrootte ('+DB.set.minPx+' px)'};
+  $('#tdon').onchange=e=>{DB.set.tdOn=e.target.checked;save()};$('#tdexp').onclick=()=>tdExport();
+  $('#tdclr').onclick=()=>confirmBox('Alle opgeslagen trainingsdata wissen?','Wissen',async()=>{await tdClear();renderCams()});
   $('#testmode').onchange=async e=>{DET.test=e.target.checked;if(DET.test){await startAllCams();resetRefs()}DET.testHits=[];paintTest()};
   $$('.cam').forEach(card=>{const i=+card.dataset.i;
     $$('[data-k]',card).forEach(el=>el.onchange=async()=>{const k=el.dataset.k;const v=el.type==='checkbox'?el.checked:el.value;
