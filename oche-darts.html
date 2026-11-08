@@ -242,7 +242,7 @@ main:has(#groot){max-width:none;padding-block:10px}
 .mrow.onescreen .pc.on{transform:none}
 .mrow.onescreen .pc-sub{font-size:16px}.mrow.onescreen .pc-darts{font-size:16px}
 .mrow.onescreen .mcenter{min-height:0;justify-content:center}
-.mrow.onescreen .mcenter .boardwrap{width:min(46vw,calc(100dvh - 76px - 58px - 110px));max-width:none}
+.mrow.onescreen .mcenter .boardwrap{width:min(46vw,calc(100dvh - 76px - 58px - 170px));max-width:none}
 .mrow.onescreen .route{min-height:36px}
 .inpanel{min-height:0;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 6px 20px rgba(19,32,28,.05);overflow:auto}
 .inpanel .pad{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px;margin:0}
@@ -309,6 +309,11 @@ main:has(#groot){max-width:none;padding-block:10px}
 #liveov{cursor:crosshair}
 .livelab{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;pointer-events:none}
 .mcenter .boardwrap{position:relative}
+.turnhead{flex:none;font-family:var(--f-display);font-weight:800;font-size:clamp(24px,3.6vh,38px);letter-spacing:.02em;text-transform:uppercase;color:var(--accent);text-align:center;line-height:1.05}
+.turnhead.pop{animation:pop .35s ease-out}
+.mrow.onescreen .mcenter>*{flex:none}
+.mrow.onescreen .mcenter>.boardwrap{flex:0 1 auto}
+.viewseg{flex:none}
 /* wedstrijdscherm */
 #groot{display:flex;flex-direction:column;gap:14px}
 .mtop{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:start}
@@ -906,7 +911,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1515';
+const APPV='1530';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -919,7 +924,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="front" ${(DB.set.boardView||'front')==='front'?'selected':''}>Recht van voren, 20 boven</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:15</div>
+   <div class="small muted">Versie 8 nov 15:30</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1320,6 +1325,7 @@ function buildGame(G){
     <div class="mrow onescreen">
       <div class="plist n${MATCH.players.length}">${MATCH.players.map((_,i)=>card(i)).join('')}<div id="gpanelwrap"></div></div>
       <div class="mcenter"><div class="camst"><button class="cambtn" id="camtoggle"></button><span class="dstate" id="dstate"></span></div>
+        <div class="turnhead" id="turnhead"></div>
         <div class="viewseg seg" id="viewseg"><button data-v="board">Bord</button><button data-v="live">Live</button><button data-v="cam0">Cam 1</button><button data-v="cam1">Cam 2</button><button data-v="cam2">Cam 3</button></div>
         <div class="route" id="route"></div>
         <div class="boardwrap glow">${boardSVG('gboard')}<div class="livewrap" id="livewrap" hidden><video id="livev" autoplay muted playsinline></video><svg id="liveov" viewBox="-228 -228 456 456" preserveAspectRatio="xMidYMid meet"><g class="marks"></g></svg><span class="livelab" id="livelab"></span></div><div class="callout" id="callout"></div></div></div>
@@ -1417,8 +1423,12 @@ function updateGame(G){
   const nb=$('#next');nb.disabled=!curTurn()||curTurn().closed||!curTurn().darts.length||ST.over;nb.classList.toggle('ready',ST.done&&!ST.over);
   const ct=$('#camtoggle'),k=activeCams().length;ct.innerHTML=`<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h3l2-2h6l2 2h3v12H4z" fill="currentColor"/><circle cx="12" cy="13" r="3.5" fill="var(--bg)"/></svg> ${MATCH.input==='cam'?k:'uit'}`;
   ct.classList.toggle('on',MATCH.input==='cam');ct.title=MATCH.input==='cam'?'Camera\'s tellen mee. Klik om uit te zetten.':'Klik om automatisch te laten tellen';
-  buildThumbs();onlineGameUI();onlineSync();if(!GDOM.selfHidden)showSelf();botTick();applyCenterView();
+  buildThumbs();onlineGameUI();onlineSync();if(!GDOM.selfHidden)showSelf();botTick();applyCenterView();turnHead();
 }
+function turnHead(){const el=$('#turnhead');if(!el||!ST)return;let t='';
+  if(ST.over)t=(ST.winner!=null?MATCH.players[ST.winner].name+' wint!':'Einde spel');
+  else{const a=actor();const nm=a?a.name:'';t=a&&a.bot?nm+' gooit…':isGuestTurn()?nm+' gooit op zijn telefoon…':nm+' is aan de beurt!'}
+  if(el.textContent!==t){el.textContent=t;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}}
 function applyCenterView(){const v=DB.set.centerView||'board';const lw=$('#livewrap'),gb=$('#gboard');if(!lw)return;
   $$('#viewseg button').forEach(b=>{b.classList.toggle('on',b.dataset.v===v);const ci=b.dataset.v.startsWith('cam')?+b.dataset.v.slice(3):-1;if(ci>=0)b.hidden=!(CAMRT[ci]&&CAMRT[ci].stream)});
   let st=null,lab='';const vid=$('#livev'),ov=$('#liveov');
