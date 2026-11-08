@@ -198,7 +198,9 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .selfcam .ib{position:absolute;right:2px;top:0;width:28px;height:28px;font-size:18px;color:#fff;background:rgba(0,0,0,.35)}
 .ownv{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
 .ownv .rvid{margin-top:0}
-.ownv .rvid.face{aspect-ratio:16/9;max-height:150px}
+.ownv .rvid.face{aspect-ratio:16/9}
+.mrow.onescreen .plist .ownv{margin:8px 0 6px}
+.mrow.onescreen .plist .ownv .rvid.face{border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
 .ownv .rvid.face video{transform:scaleX(-1)}
 .ownv .rvid:not(.face){aspect-ratio:1/1;max-width:340px;margin:0 auto}
 #ownboard{object-fit:contain;transition:transform .3s}
@@ -999,7 +1001,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1640';
+const APPV='1645';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -1012,7 +1014,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 16:40</div>
+   <div class="small muted">Versie 8 nov 16:45</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1434,13 +1436,14 @@ function matchChips(G){const o=MATCH.opts||{};const c=[G.name];
   return c}
 function buildGame(G){
   const host=$('#v-play');const two=MATCH.players.length>1;
+  const meIdx=MATCH.players.findIndex(p=>!p.bot&&p.id!==ONLINE.guestId);
   const card=i=>`<div class="pc" data-i="${i}"><div class="pc-in">
       <div class="pc-name"><span class="dot"></span><span class="av">${esc(MATCH.players[i].name.slice(0,1).toUpperCase())}</span><span class="nm">${esc(MATCH.players[i].name)}</span><small class="tag"></small></div>
       <div class="pc-main"><div class="co"></div><div class="big num">&nbsp;</div><div class="legs num" title="Gewonnen legs"></div></div>
-      <div class="pc-sub num"></div><div class="pc-darts num"></div>
+      <div class="pc-sub num"></div><div class="pc-darts num"></div>${i===meIdx?'<div class="ownv" id="ownv" hidden><div class="rvid face"><video id="ownface" autoplay playsinline muted></video><em>Jij</em></div></div>':''}
       <div class="pc-stats num"><div><span class="l1">3-dart gem.</span><b class="v1">0.00</b></div><div><span class="l2">Laatste score</span><b class="v2">–</b></div><div><span class="l3">Darts</span><b class="v3">0</b></div></div>
       <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"></svg>
-      <div class="hist num"></div>${MATCH.online&&MATCH.players[i].id!==ONLINE.guestId?'<div class="ownv" id="ownv" hidden><div class="rvid face"><video id="ownface" autoplay playsinline muted></video><em>Jij</em></div></div>':''}</div><div class="prog"><i></i></div></div>`;
+      <div class="hist num"></div></div><div class="prog"><i></i></div></div>`;
   host.innerHTML=`<div id="groot" class="${two?'two':'solo'}">
     <div class="mtop">
       <div class="mleft"><button class="back" id="quit">‹ Afsluiten</button><div class="mchips">${matchChips(G).map(c=>`<span>${esc(c)}</span>`).join('')}<div class="camst"><button class="cambtn" id="camtoggle"></button><span class="dstate" id="dstate"></span></div></div></div>
