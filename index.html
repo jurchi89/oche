@@ -250,10 +250,12 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 main:has(#groot){max-width:none;padding-block:10px}
 #groot{height:calc(100dvh - 76px);display:flex;flex-direction:column;gap:8px;overflow:hidden}
 #groot .mtop{flex:none;align-items:center}
-#groot .turnbar{min-height:58px}
-#groot .tb-darts{grid-template-columns:repeat(3,96px)}
-#groot .tbs b{font-size:28px}
-#groot .tb-sum{font-size:38px;min-width:90px}
+#groot .turnbar{min-height:96px;border-radius:20px;box-shadow:0 10px 26px rgba(20,40,30,.10)}
+#groot .tb-darts{grid-template-columns:repeat(3,150px);padding:0 18px}
+#groot .tbs b{font-size:50px}
+#groot .tbs em{font-size:40px;padding:4px 14px;border-radius:14px;border-width:2px}
+#groot .tbs svg{width:80px;height:20px}
+#groot .tb-sum{font-size:64px;min-width:150px}
 .mrow.onescreen{flex:1;min-height:0;display:grid;grid-template-columns:clamp(240px,21vw,380px) minmax(0,1fr) clamp(320px,27vw,520px);gap:14px;align-items:stretch}
 .mrow.onescreen .plist{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto;padding:4px}
 .mrow.onescreen .plist .pc{flex:1 1 auto;min-height:max-content;display:flex;flex-direction:column}
@@ -266,7 +268,7 @@ main:has(#groot){max-width:none;padding-block:10px}
 .mrow.onescreen .pc.on{transform:none}
 .mrow.onescreen .pc-sub{font-size:16px}.mrow.onescreen .pc-darts{font-size:16px}
 .mrow.onescreen .mcenter{min-height:0;justify-content:center}
-.mrow.onescreen .mcenter .boardwrap{width:min(46vw,calc(100dvh - 76px - 58px - 112px));max-width:none}
+.mrow.onescreen .mcenter .boardwrap{width:min(46vw,calc(100dvh - 76px - 58px - 150px));max-width:none}
 .demophone{position:fixed;right:18px;bottom:18px;z-index:900;width:250px;background:#111;border-radius:30px;padding:10px 10px 14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .demophone.big{width:360px}
 .demophone .dphead{display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;padding:2px 8px 8px}
@@ -310,8 +312,13 @@ main:has(#groot){max-width:none;padding-block:10px}
 /* spelerskaarten: volle kleurvlakken, naam boven, grote score links, statistieken onder */
 .mrow.onescreen .plist{gap:0;padding:0;border-radius:18px;overflow:auto;box-shadow:0 10px 30px rgba(19,32,28,.12);align-self:stretch}
 .mrow.onescreen .plist.n1{align-self:start}
-.mrow.onescreen .plist .pc{border:0;border-radius:0;box-shadow:none;background:linear-gradient(170deg,#ffb453,#f59a2e);color:#fff;transform:none!important}
+.mrow.onescreen .plist .pc{position:relative;border:0;border-radius:0;box-shadow:none;background:linear-gradient(170deg,#7d8b86,#65736e);color:#fff;transform:none!important}
 .mrow.onescreen .plist .pc.on{background:linear-gradient(170deg,#ff7a45,#f25a2c);box-shadow:none}
+/* grote pijl: wie is aan de beurt */
+.mrow.onescreen .plist .pc.on::after{content:'';position:absolute;right:18px;top:18px;width:0;height:0;border-left:44px solid #fff;border-top:28px solid transparent;border-bottom:28px solid transparent;filter:drop-shadow(0 4px 8px rgba(0,0,0,.18));animation:nudge 1.1s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+.mrow.onescreen .plist .pc-stats span{color:rgba(255,255,255,.85)!important}
+#turnhead{display:none!important}
 .mrow.onescreen .plist .pc.out{opacity:.7}
 .mrow.onescreen .plist .pc-in{align-items:stretch;justify-content:space-between;padding:16px 18px 12px;gap:6px}
 .mrow.onescreen .plist .pc-name{background:none;padding:0;gap:10px;align-self:flex-start}
@@ -992,7 +999,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1630';
+const APPV='1640';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -1005,7 +1012,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 16:30</div>
+   <div class="small muted">Versie 8 nov 16:40</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
