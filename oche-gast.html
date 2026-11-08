@@ -59,6 +59,8 @@ input[type=text]{background:var(--panel2);border:1px solid var(--line);border-ra
 .vids{display:grid;grid-template-columns:1fr;gap:8px;margin-top:10px}
 .vid{position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3}
 .vid video{width:100%;height:100%;object-fit:cover;display:block}
+.vid .face{position:absolute;right:8px;top:8px;width:30%;max-width:160px;aspect-ratio:16/9;border-radius:10px;overflow:hidden;border:2px solid var(--gold);background:#000}
+.vid .face video{width:100%;height:100%;object-fit:cover}
 .vid b{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:6px;font-size:12px}
 .mini{position:fixed;right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:110px;aspect-ratio:3/4;border-radius:10px;overflow:hidden;border:2px solid var(--gold);background:#000;z-index:5}
 .mini video{width:100%;height:100%;object-fit:cover}
@@ -99,7 +101,7 @@ body.mine .vid{max-height:28vh;aspect-ratio:auto;height:28vh}
     <div class="keys" id="keys"></div>
     <div class="ctrl"><button class="btn" id="undo">Ongedaan</button><button class="btn primary" id="next">Volgende beurt</button></div>
   </div>
-  <div class="vids"><div class="vid"><video id="hostv" autoplay playsinline muted></video><b id="hostlab">Bord van je maat</b></div></div>
+  <div class="vids"><div class="vid"><video id="hostv" autoplay playsinline muted></video><b id="hostlab">Bord van je maat</b><div class="face" id="face" hidden><video id="facev" autoplay playsinline muted></video></div></div></div>
 </section>
 <div class="mini" id="mini" hidden><video id="selfv" autoplay playsinline muted></video></div>
 
@@ -139,6 +141,7 @@ $('#go').onclick=async()=>{
 };
 function connect(c){
   peer=new Peer({debug:1});
+  peer.on('call',call=>{call.answer();call.on('stream',st=>{const v=$('#facev');v.srcObject=st;v.play().catch(()=>{});$('#face').hidden=false})});
   peer.on('open',()=>{
     conn=peer.connect('oche-dart-'+c,{reliable:true});
     const to=setTimeout(()=>{if(!conn.open){$('#jmsg').textContent='Geen verbinding. Klopt de code, en staat Oche bij je maat nog open?';$('#go').disabled=false;chip('bad','Niet verbonden')}},12000);

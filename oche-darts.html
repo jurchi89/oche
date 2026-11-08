@@ -728,11 +728,20 @@ function onlineSetupHTML(){
   const link=guestLink();
   return `<div class="row"><span class="code">${ONLINE.code}</span><span class="chip ${ONLINE.open?'ok':'warn'}"><i></i>${ONLINE.open?esc(ONLINE.guestName)+' is verbonden':'Wachten op je maat…'}</span></div>
    ${link?`<div class="small">Stuur je maat deze link:</div><div class="row"><input type="text" id="glink" readonly value="${esc(link)}" style="flex:1"><button class="btn" id="copylink">Kopiëren</button></div>`:`<div class="small muted">Je maat opent de telefoonpagina en vult de code <b>${ONLINE.code}</b> in.</div>`}
-   <label class="f">Camera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
+   <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
+   <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
-function bindOnlineSetup(){const sc=$('#sharecam');if(sc)sc.onchange=()=>{DB.set.shareCam=+sc.value;save()};const b=$('#mkroom');if(b)b.onclick=createRoom;const c=$('#closeroom');if(c)c.onclick=closeRoom;
+function faceOptions(){const used=DB.cams.map(c=>c.deviceId);return DEVICES.filter(d=>!used.includes(d.deviceId)).concat(DEVICES.filter(d=>used.includes(d.deviceId))).map(d=>`<option value="${esc(d.deviceId)}" ${DB.set.faceLabel&&d.label===DB.set.faceLabel?'selected':''}>${esc(d.label||'Camera')}${used.includes(d.deviceId)?' (bordcamera)':''}</option>`).join('')}
+async function sendFace(){const lab=DB.set.faceLabel;if(!lab||!ONLINE.peer||!ONLINE.conn)return;
+  if(!DEVICES.length){try{const t=await navigator.mediaDevices.getUserMedia({video:true});DEVICES=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput'&&d.deviceId);t.getTracks().forEach(x=>x.stop())}catch(e){return}}
+  const dev=DEVICES.find(d=>d.label===lab);if(!dev)return;
+  try{if(!ONLINE.face||!ONLINE.face.active){const used=DB.cams.findIndex(c=>c.deviceId===dev.deviceId);
+      ONLINE.face=used>=0&&STREAMS[dev.deviceId]?STREAMS[dev.deviceId].stream:await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:dev.deviceId},width:{ideal:640},height:{ideal:360},frameRate:{ideal:20}},audio:false})}
+    ONLINE.peer.call(ONLINE.conn.peer,ONLINE.face,{metadata:{kind:'face'}})}catch(e){toast('Laptopcamera delen lukt niet: '+e.message)}}
+function bindOnlineSetup(){const fc=$('#facecam');if(fc){if(!DEVICES.length&&camSupported())findDevicesQuiet().then(()=>{const f2=$('#facecam');if(f2&&f2.options.length<2)refreshOnlineBox()});
+  fc.onchange=()=>{const d=DEVICES.find(x=>x.deviceId===fc.value);DB.set.faceLabel=d?d.label:'';save();if(ONLINE.face){ONLINE.face.getTracks().forEach(t=>{if(!STREAMS[t.getSettings().deviceId])t.stop()});ONLINE.face=null}if(ONLINE.open)sendFace()}}const sc=$('#sharecam');if(sc)sc.onchange=()=>{DB.set.shareCam=+sc.value;save()};const b=$('#mkroom');if(b)b.onclick=createRoom;const c=$('#closeroom');if(c)c.onclick=closeRoom;
   const cp=$('#copylink');if(cp)cp.onclick=()=>{const i=$('#glink');navigator.clipboard.writeText(i.value).then(()=>toast('Link gekopieerd'),()=>{i.select();toast('Selecteer en kopieer de link')})};
   if(ONLINE.open){const p2=$('#p2');if(p2){p2.value=ONLINE.guestName;p2.disabled=true}}}
 function refreshOnlineBox(){const b=$('#onlinebox');if(b){b.innerHTML='<h3>Online tegen een maat</h3>'+onlineSetupHTML();bindOnlineSetup()}updateOnlineChip()}
@@ -760,7 +769,7 @@ function closeRoom(){try{ONLINE.conn&&ONLINE.conn.send({t:'bye'})}catch(e){}try{
   Object.assign(ONLINE,{peer:null,conn:null,open:false,code:'',guestName:'',remote:null,lastSent:''});refreshOnlineBox()}
 function attachRemote(){const v=$('#rvideo');if(v&&ONLINE.remote&&v.srcObject!==ONLINE.remote){v.srcObject=ONLINE.remote;v.play().catch(()=>{});const s=$('#rvstate');if(s)s.remove()}}
 function onGuestMsg(m){if(!m||typeof m!=='object')return;
-  if(m.t==='hello'){ONLINE.guestName=String(m.name||'Maat').slice(0,24).trim()||'Maat';ONLINE.open=true;say(ONLINE.guestName+' is verbonden');refreshOnlineBox();onlineSync(true);return}
+  if(m.t==='hello'){ONLINE.guestName=String(m.name||'Maat').slice(0,24).trim()||'Maat';ONLINE.open=true;setTimeout(sendFace,800);say(ONLINE.guestName+' is verbonden');refreshOnlineBox();onlineSync(true);return}
   if(!MATCH||MATCH.saved||!isGuestTurn())return;
   if(m.t==='dart'){const n=+m.n,mm=+m.m;if(!(n===0||n===25||(n>=1&&n<=20))||!(mm>=0&&mm<=3))return;if(ST.done)return;const d={n,m:n?mm:0};const [x,y]=segPoint(d.n,d.m);d.x=x;d.y=y;d.src='remote';addDart(d)}
   else if(m.t==='undo'){const t=curTurn();if(t&&!t.closed&&t.darts.length)undo()}
@@ -1053,6 +1062,7 @@ const CAL=[{lab:'20 | 1',a:81},{lab:'6 | 10',a:-9},{lab:'3 | 19',a:-99},{lab:'11
 const STREAMS={};
 const CAMRT=[0,1,2].map(()=>({stream:null,PW:0,PH:0,proc:null,pctx:null,cur:null,ref:null,prev:null,mask:null,maskN:0,H:null,Hinv:null,chg:0,mot:0,last:null,lastCands:null,err:''}));
 let DEVICES=[];
+async function findDevicesQuiet(){try{const t=await navigator.mediaDevices.getUserMedia({video:true});DEVICES=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==='videoinput'&&d.deviceId);t.getTracks().forEach(x=>x.stop())}catch(e){}}
 const DET={active:false,test:false,state:'wait',settle:0,stable:0,quiet:0,info:'',testHits:[]};
 
 function solveH(src,dst){ // 4 punten -> 3x3 (h33=1)
