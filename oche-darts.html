@@ -188,7 +188,7 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .selfcam .ib{position:absolute;right:2px;top:0;width:28px;height:28px;font-size:18px;color:#fff;background:rgba(0,0,0,.35)}
 .ownv{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
 .ownv .rvid{margin-top:0}
-.ownv .rvid.face{aspect-ratio:16/9}
+.ownv .rvid.face{aspect-ratio:16/9;max-height:150px}
 .ownv .rvid.face video{transform:scaleX(-1)}
 .ownv .rvid:not(.face){aspect-ratio:1/1;max-width:340px;margin:0 auto}
 #ownboard{object-fit:contain;transition:transform .3s}
@@ -328,6 +328,7 @@ main:has(#groot){max-width:none;padding-block:10px}
 .livewrap video{width:100%;height:100%;object-fit:contain;display:block}
 .livewrap svg{position:absolute;inset:0;width:100%;height:100%}
 #liveov{cursor:crosshair}
+.livewrap.nofeed .livelab{top:50%;bottom:auto;transform:translate(-50%,-50%);font-size:15px;padding:10px 14px;max-width:80%;text-align:center;white-space:normal}
 .livelab{position:absolute;left:50%;bottom:6%;transform:translateX(-50%);background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:6px;pointer-events:none}
 .mcenter .boardwrap{position:relative}
 .turnhead{flex:none;font-family:var(--f-display);font-weight:800;font-size:clamp(24px,3.6vh,38px);letter-spacing:.02em;text-transform:uppercase;color:var(--accent);text-align:center;line-height:1.05}
@@ -948,7 +949,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1540';
+const APPV='1545';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -961,7 +962,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:40</div>
+   <div class="small muted">Versie 8 nov 15:45</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1004,7 +1005,7 @@ function demoOpen(cam){if(!ONLINE.code){toast('Maak eerst een code aan');return}
 function demoClose(quiet){const w=$('#demophone');if(w)w.remove();const was=DEMOM.on;DEMOM.on=false;if(was&&!quiet)refreshOnlineBox()}
 function closeRoom(){demoClose(true);try{ONLINE.conn&&ONLINE.conn.send({t:'bye'})}catch(e){}try{ONLINE.peer&&ONLINE.peer.destroy()}catch(e){}
   Object.assign(ONLINE,{peer:null,conn:null,open:false,code:'',guestName:'',remote:null,lastSent:''});refreshOnlineBox()}
-function attachRemote(){const v=$('#rvideo');if(!v)return;const s=$('#rvstate');
+function attachRemote(){if(MATCH&&MATCH.online&&$('#livewrap'))applyCenterView();const v=$('#rvideo');if(!v)return;const s=$('#rvstate');
   if(ONLINE.remote&&v.srcObject!==ONLINE.remote){v.srcObject=ONLINE.remote;v.play().catch(()=>{})}
   if(s){if(!ONLINE.remote)s.textContent=ONLINE.guestCam===false?(ONLINE.guestName||'Je maat')+' deelt geen camera. Hij moet bij het verbinden "Mijn camera delen" aanvinken en toestemming geven.':'Wachten op beeld…';else s.textContent='';s.hidden=!!ONLINE.remote}const bx=v.closest('.rvid');if(bx)bx.classList.toggle('nocam',!ONLINE.remote&&ONLINE.guestCam===false)}
 function onGuestMsg(m){if(!m||typeof m!=='object')return;
@@ -1026,7 +1027,7 @@ function onlineState(){
 function onlineSync(force){if(!ONLINE.conn||!ONLINE.open)return;const st=onlineState();const j=JSON.stringify(st);if(!force&&j===ONLINE.lastSent)return;ONLINE.lastSent=j;try{ONLINE.conn.send(st)}catch(e){}}
 function onlineGameUI(){if(!MATCH||!MATCH.online)return;attachRemote();const gr=$('#groot');if(gr)gr.classList.toggle('guestturn',isGuestTurn());
   const r=$('#route');if(r&&isGuestTurn()&&!ST.over)r.innerHTML=`<span class="rtext">${esc(MATCH.players[ST.cur].name)} gooit op zijn telefoon…</span>`;
-  const c=$('#camtoggle');if(c&&!ONLINE.open)c.insertAdjacentHTML('afterend','')}
+  const c=$('#camtoggle');if(c&&!ONLINE.open)c.insertAdjacentHTML('afterend','');applyCenterView()}
 function updateOnlineChip(){}
 async function checkUpdate(){if(location.protocol!=='https:')return;try{const t=await fetch('index.html?nc='+Date.now(),{cache:'no-store'}).then(r=>r.text());const m=t.match(/const APPV='(\d+)'/);
   if(m&&m[1]>APPV&&!document.getElementById('updbar')){const d=document.createElement('button');d.id='updbar';d.className='btn primary';d.style.cssText='position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:50';d.textContent='Nieuwe versie beschikbaar. Klik om te verversen.';d.onclick=()=>location.replace(location.pathname+'?v='+m[1]);document.body.appendChild(d)}}catch(e){}}
@@ -1086,7 +1087,7 @@ function sharedBoardStream(){const i=shareIdx();if(i<0)return null;if((DB.set.bo
 function ownBoardStream(){const pick=DB.set.shareCam!=null&&CAMRT[DB.set.shareCam]&&CAMRT[DB.set.shareCam].stream?CAMRT[DB.set.shareCam]:CAMRT.find(r=>r.stream);return pick?pick.stream.stream:null}
 async function showOwnCard(){const w=$('#ownv');if(!w)return false;if(!DB.set.faceLabel){w.hidden=true;return true}
   const st=await faceStream();if(!st){w.hidden=true;return true}const f=$('#ownface');if(f.srcObject!==st){f.srcObject=st;f.play().catch(()=>{})}
-  const b=$('#ownboard'),bs=sharedBoardStream();if(bs&&b.srcObject!==bs){b.srcObject=bs;b.play().catch(()=>{})}b.parentNode.hidden=!bs;w.hidden=false;b.style.transform='';return true}
+  w.hidden=false;return true}
 async function showSelf(){const box=$('#selfcam');if(!box)return;if(await showOwnCard()){box.hidden=true;return}if(!DB.set.faceLabel){box.hidden=true;return}
   const v=$('#selfv');if(v.srcObject&&v.srcObject.active){box.hidden=false;return}if(SELFBUSY)return;SELFBUSY=true;
   const st=await faceStream();SELFBUSY=false;if(!st){box.hidden=true;return}v.srcObject=st;v.play().catch(()=>{});box.hidden=false}
@@ -1386,7 +1387,7 @@ function buildGame(G){
       <div class="pc-sub num"></div><div class="pc-darts num"></div>
       <div class="pc-stats num"><div><span class="l1">3-dart gem.</span><b class="v1">0.00</b></div><div><span class="l2">Laatste score</span><b class="v2">–</b></div><div><span class="l3">Darts</span><b class="v3">0</b></div></div>
       <svg class="spark" viewBox="0 0 120 30" preserveAspectRatio="none" aria-hidden="true"></svg>
-      <div class="hist num"></div>${MATCH.online&&MATCH.players[i].id===ONLINE.guestId?'<div class="rvid"><video id="rvideo" autoplay playsinline muted></video><span id="rvstate">Wachten op beeld…</span></div>':''}${MATCH.online&&MATCH.players[i].id!==ONLINE.guestId?'<div class="ownv" id="ownv" hidden><div class="rvid face"><video id="ownface" autoplay playsinline muted></video><em>Jij</em></div><div class="rvid"><video id="ownboard" autoplay playsinline muted></video><em>Jouw bord (zo ziet je maat het)</em></div></div>':''}</div><div class="prog"><i></i></div></div>`;
+      <div class="hist num"></div>${MATCH.online&&MATCH.players[i].id!==ONLINE.guestId?'<div class="ownv" id="ownv" hidden><div class="rvid face"><video id="ownface" autoplay playsinline muted></video><em>Jij</em></div></div>':''}</div><div class="prog"><i></i></div></div>`;
   host.innerHTML=`<div id="groot" class="${two?'two':'solo'}">
     <div class="mtop">
       <div class="mleft"><button class="back" id="quit">‹ Afsluiten</button><div class="mchips">${matchChips(G).map(c=>`<span>${esc(c)}</span>`).join('')}</div></div>
@@ -1501,6 +1502,13 @@ function turnHead(){const el=$('#turnhead');if(!el||!ST)return;let t='';
   else{const a=actor();const nm=a?a.name:'';t=a&&a.bot?nm+' gooit…':isGuestTurn()?nm+' gooit op zijn telefoon…':nm+' is aan de beurt!'}
   if(el.textContent!==t){el.textContent=t;el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop')}}
 function applyCenterView(){const v=DB.set.centerView||'board';const lw=$('#livewrap'),gb=$('#gboard');if(!lw)return;
+  // online: als je maat gooit, staat zijn bord (telefooncamera) groot in het midden; daarna weer jouw bord
+  if(MATCH&&MATCH.online&&!ST.over&&isGuestTurn()){const gname=MATCH.players[ST.cur].name,vid=$('#livev');lw.hidden=false;lw.classList.remove('round');lw.classList.add('remote');gb.style.visibility='hidden';
+    $$('#viewseg button').forEach(b=>b.classList.remove('on'));$('#liveov .marks').innerHTML='';
+    if(ONLINE.remote){if(vid.srcObject!==ONLINE.remote){vid.srcObject=ONLINE.remote;vid.play().catch(()=>{})}vid.style.objectFit='contain';lw.classList.remove('nofeed');$('#livelab').textContent='Bord van '+gname}
+    else{if(vid.srcObject)vid.srcObject=null;lw.classList.add('nofeed');$('#livelab').textContent=ONLINE.guestCam===false?gname+' deelt geen camera. Hij tikt zijn scores in op zijn telefoon.':'Wachten op het beeld van '+gname+'…'}
+    return}
+  lw.classList.remove('remote','nofeed');
   $$('#viewseg button').forEach(b=>{b.classList.toggle('on',b.dataset.v===v);const ci=b.dataset.v.startsWith('cam')?+b.dataset.v.slice(3):-1;if(ci>=0)b.hidden=!(CAMRT[ci]&&CAMRT[ci].stream)});
   let st=null,lab='';const vid=$('#livev'),ov=$('#liveov');
   if(v==='live'){const i=shareIdx()>=0&&CAMRT[shareIdx()].H?shareIdx():activeCams()[0];st=i!=null&&i>=0?frontStream(i):null;lab='Live, recht van voren';ov.setAttribute('viewBox','-228 -228 456 456');vid.style.objectFit='contain'}
