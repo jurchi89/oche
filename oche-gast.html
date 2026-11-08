@@ -45,8 +45,7 @@ body.ingame .top{display:none}
 .face{position:relative;width:27vw;max-width:170px;border-radius:12px;overflow:hidden;border:2px solid var(--gold);background:#000}
 .face{cursor:pointer}
 .face video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
-body.swap .face video{transform:none;object-fit:contain}
-body.swap .vid video{transform:scaleX(-1)}
+body.swap .face video{object-fit:contain}
 .face::after{content:"⇄";position:absolute;right:4px;top:2px;font-size:12px;color:#fff;background:rgba(0,0,0,.5);border-radius:4px;padding:0 4px}
 .face span{position:absolute;left:4px;bottom:3px;font-size:10px;font-weight:700;background:rgba(0,0,0,.55);padding:0 5px;border-radius:4px}
 .turnrow{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0 4px 0 10px;min-height:46px}
@@ -62,7 +61,7 @@ body.swap .vid video{transform:scaleX(-1)}
 .ib{background:none;border:0;color:var(--muted);font-size:19px;width:30px;height:34px;padding:0;border-radius:8px;flex:none}
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 .vid{position:relative;flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#000}
-.vid video{width:100%;height:100%;object-fit:contain;display:block}
+.vid video{width:100%;height:100%;object-fit:contain;display:block;transform-origin:50% 50%;transition:transform .3s}
 .vid b{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:6px;font-size:12px}
 .vid .big-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
 .route{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
@@ -103,7 +102,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:25</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:30</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -197,7 +196,14 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
-const STR={board:null,face:null};let SWAP=false;
+const STR={board:null,face:null};let SWAP=false,ROT=0;
+function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
+  const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
+  const r=deg*Math.PI/180,c=Math.abs(Math.cos(r)),s=Math.abs(Math.sin(r));const bw=cw*c+ch*s,bh=cw*s+ch*c;const k=Math.min(W/bw,H/bh);
+  video.style.transform=`rotate(${deg}deg) scale(${k.toFixed(3)})`}
+function applyRot(){const big=$('#hostv'),small=$('#facev');
+  if(SWAP){big.style.transform='scaleX(-1)';fitRot(small,ROT)}else{fitRot(big,ROT);small.style.transform=''}}
+$('#hostv').addEventListener('loadedmetadata',applyRot);$('#facev').addEventListener('loadedmetadata',applyRot);addEventListener('resize',()=>setTimeout(applyRot,100));
 function placeStreams(){const big=$('#hostv'),small=$('#facev');const hn=($('#facelab').dataset.host)||'je maat';
   if(SWAP&&!STR.face)SWAP=false;
   const bs=SWAP?STR.face:STR.board,ss=SWAP?STR.board:STR.face;
@@ -205,7 +211,7 @@ function placeStreams(){const big=$('#hostv'),small=$('#facev');const hn=($('#fa
   if(small.srcObject!==ss){small.srcObject=ss||null;if(ss)small.play().catch(()=>{})}
   $('#face').hidden=!ss;document.body.classList.toggle('swap',SWAP);
   $('#hostlab').textContent=SWAP?hn:'Bord van '+hn;$('#facelab').textContent=SWAP?'Bord':hn;
-  $('#swapbtn').hidden=!STR.face}
+  $('#swapbtn').hidden=!STR.face;applyRot()}
 function doSwap(){if(!STR.face){toast('Je maat deelt geen laptopcamera');return}SWAP=!SWAP;placeStreams()}
 $('#face').onclick=doSwap;$('#swapbtn').onclick=doSwap;$('#vidbox').ondblclick=doSwap;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -214,7 +220,7 @@ function onMsg(m){if(!m||typeof m!=='object')return;
   if(m.t==='ping'||m.t==='pong')return;
   if(m.t==='full'){toast('Er speelt al iemand mee bij je maat');return}
   if(m.t==='bye'){$('#status').textContent='Je maat heeft het online spelen gestopt.';$('#pad').classList.add('locked');return}
-  if(m.t!=='state')return;S=m;
+  if(m.t!=='state')return;S=m;if(typeof m.rot==='number'&&m.rot!==ROT){ROT=m.rot;applyRot()}
   if(m.idle){document.body.classList.add('ingame');document.body.classList.remove('mine');$('#status').textContent='Wacht op start door '+(m.host||'je maat');$('#status').className='status';$('#cards').innerHTML=`<div class="pc"><div class="nm">${esc(m.host||'Je maat')}</div><div class="big">–</div><div class="sub">&nbsp;</div></div><div class="pc"><div class="nm">${esc(myName)} (jij)</div><div class="big">–</div><div class="sub">&nbsp;</div></div>`;$('#pad').classList.add('locked');return}
   $('#game').textContent=m.chips.join(' · ');
   $('#cards').innerHTML=m.players.map((p,i)=>`<div class="pc ${i===m.cur&&!m.over?'on':''}"><div class="nm">${esc(p.name)}${i===m.gi?' (jij)':''}</div><div class="big">${esc(p.big)}</div><div class="sub">${esc(p.sub)}</div></div>`).join('');

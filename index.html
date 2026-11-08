@@ -178,6 +178,7 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .ownv .rvid{margin-top:0}
 .ownv .rvid.face{aspect-ratio:16/9}
 .ownv .rvid.face video{transform:scaleX(-1)}
+#ownboard{object-fit:contain;transition:transform .3s}
 .rvid em{position:absolute;left:8px;bottom:6px;font-style:normal;font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 7px;border-radius:5px}
 .rvid span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
 /* wedstrijdscherm */
@@ -738,8 +739,9 @@ function onlineSetupHTML(){
   return `<div class="row"><span class="code">${ONLINE.code}</span><span class="chip ${ONLINE.open?'ok':'warn'}"><i></i>${ONLINE.open?esc(ONLINE.guestName)+' is verbonden':'Wachten op je maat…'}</span></div>
    ${link?`<div class="small">Stuur je maat deze link:</div><div class="row"><input type="text" id="glink" readonly value="${esc(link)}" style="flex:1"><button class="btn" id="copylink">Kopiëren</button></div>`:`<div class="small muted">Je maat opent de telefoonpagina en vult de code <b>${ONLINE.code}</b> in.</div>`}
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
+   <label class="row small"><input type="checkbox" id="rot20" ${DB.set.rot20===false?'':'checked'}> Bordbeeld draaien zodat de 20 bovenaan staat</label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 02:25</div>
+   <div class="small muted">Versie 8 nov 02:30</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -747,7 +749,7 @@ function faceOptions(){const used=DB.cams.map(c=>c.deviceId);const bd=boardDevic
 function sendBoard(){if(!ONLINE.peer||!ONLINE.conn)return;const pick=DB.set.shareCam!=null&&CAMRT[DB.set.shareCam]&&CAMRT[DB.set.shareCam].stream?CAMRT[DB.set.shareCam]:CAMRT.find(r=>r.stream);
   if(!pick){toast('Geen bordcamera actief om te delen');return}try{ONLINE.peer.call(ONLINE.conn.peer,pick.stream.stream,{metadata:{kind:'board'}})}catch(e){toast('Bordbeeld delen lukt niet: '+e.message)}}
 async function sendFace(){if(!ONLINE.peer||!ONLINE.conn)return;const st=await faceStream();if(!st)return;try{ONLINE.peer.call(ONLINE.conn.peer,st,{metadata:{kind:'face'}})}catch(e){toast('Laptopcamera delen lukt niet: '+e.message)}}
-function bindOnlineSetup(){const fc=$('#facecam');if(fc){if(!DEVICES.length&&camSupported())findDevicesQuiet().then(()=>{const f2=$('#facecam');if(f2&&f2.options.length<2)refreshOnlineBox()});
+function bindOnlineSetup(){const r20=$('#rot20');if(r20)r20.onchange=()=>{DB.set.rot20=r20.checked;save();onlineSync(true)};const fc=$('#facecam');if(fc){if(!DEVICES.length&&camSupported())findDevicesQuiet().then(()=>{const f2=$('#facecam');if(f2&&f2.options.length<2)refreshOnlineBox()});
   fc.onchange=()=>{const d=DEVICES.find(x=>x.deviceId===fc.value);DB.set.faceLabel=d?d.label:'';save();if(ONLINE.face){ONLINE.face.getTracks().forEach(t=>{if(!STREAMS[t.getSettings().deviceId])t.stop()});ONLINE.face=null}if(ONLINE.open)sendFace()}}const sc=$('#sharecam');if(sc)sc.onchange=()=>{DB.set.shareCam=+sc.value;save();if(ONLINE.open)sendBoard()};const b=$('#mkroom');if(b)b.onclick=createRoom;const c=$('#closeroom');if(c)c.onclick=closeRoom;
   const cp=$('#copylink');if(cp)cp.onclick=()=>{const i=$('#glink');navigator.clipboard.writeText(i.value).then(()=>toast('Link gekopieerd'),()=>{i.select();toast('Selecteer en kopieer de link')})};
   if(ONLINE.open){const p2=$('#p2');if(p2){p2.value=ONLINE.guestName;p2.disabled=true}}}
@@ -786,9 +788,9 @@ function onGuestMsg(m){if(!m||typeof m!=='object')return;
   else if(m.t==='undo'){const t=curTurn();if(t&&!t.closed&&t.darts.length)undo()}
   else if(m.t==='next'){nextTurn()}}
 function onlineState(){
-  if(!MATCH)return {t:'state',idle:true,host:DB.set.last.p1||'Host'};
+  if(!MATCH)return {t:'state',idle:true,rot:DB.set.rot20===false?0:boardRot(shareIdx()),host:DB.set.last.p1||'Host'};
   const G=GAMES[MATCH.game];const gi=MATCH.players.findIndex(p=>p.id===ONLINE.guestId);
-  return {t:'state',game:G.name,chips:matchChips(G),gi,cur:ST.cur,over:!!ST.over,winner:ST.winner!=null?MATCH.players[ST.winner].name:null,
+  return {t:'state',rot:DB.set.rot20===false?0:boardRot(shareIdx()),game:G.name,chips:matchChips(G),gi,cur:ST.cur,over:!!ST.over,winner:ST.winner!=null?MATCH.players[ST.winner].name:null,
     players:ST.players.map((p,i)=>({name:MATCH.players[i].name,big:String(G.big(ST,i)),sub:MATCH.game==='x01'?'Gem. '+avg3(ST.stat[i].pts,ST.stat[i].darts)+(+ST.o.legs>1?' · legs '+p.legs:''):G.sub(ST,i)})),
     darts:ST.tdarts.map(lbl),tpts:ST.tpts||0,done:!!ST.done,msg:ST.msg||'',
     route:(G.sugg&&!ST.done?(G.sugg(ST)||[]).map(lbl):[]),hint:G.hint?(G.hint(ST)||''):'',
@@ -806,10 +808,18 @@ async function faceStream(){const lab=DB.set.faceLabel;if(!lab||!camSupported())
   if(STREAMS[dev.deviceId])return ONLINE.face=STREAMS[dev.deviceId].stream;
   try{ONLINE.face=await navigator.mediaDevices.getUserMedia({video:{deviceId:{exact:dev.deviceId},width:{ideal:640},height:{ideal:360},frameRate:{ideal:20}},audio:false})}catch(e){return null}return ONLINE.face}
 let SELFBUSY=false;
+// hoeveel graden het camerabeeld gedraaid moet worden zodat de 20 bovenaan staat
+function shareIdx(){return DB.set.shareCam!=null&&CAMRT[DB.set.shareCam]&&CAMRT[DB.set.shareCam].stream?DB.set.shareCam:CAMRT.findIndex(r=>r.stream)}
+function boardRot(i){const rt=CAMRT[i];if(i<0||!rt||!rt.Hinv||!rt.stream)return 0;const v=rt.stream.video;const [,,sw,sh]=cropRect(i,v);
+  const a=applyH(rt.Hinv,0,0),b=applyH(rt.Hinv,0,120);const ang=Math.atan2((b[1]-a[1])*sh,(b[0]-a[0])*sw)*180/Math.PI;return Math.round(-90-ang)}
+function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
+  const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
+  const r=deg*Math.PI/180,c=Math.abs(Math.cos(r)),s=Math.abs(Math.sin(r));const bw=cw*c+ch*s,bh=cw*s+ch*c;const k=Math.min(W/bw,H/bh);
+  video.style.transform=`rotate(${deg}deg) scale(${k.toFixed(3)})`}
 function ownBoardStream(){const pick=DB.set.shareCam!=null&&CAMRT[DB.set.shareCam]&&CAMRT[DB.set.shareCam].stream?CAMRT[DB.set.shareCam]:CAMRT.find(r=>r.stream);return pick?pick.stream.stream:null}
 async function showOwnCard(){const w=$('#ownv');if(!w)return false;if(!DB.set.faceLabel){w.hidden=true;return true}
   const st=await faceStream();if(!st){w.hidden=true;return true}const f=$('#ownface');if(f.srcObject!==st){f.srcObject=st;f.play().catch(()=>{})}
-  const b=$('#ownboard'),bs=ownBoardStream();if(bs&&b.srcObject!==bs){b.srcObject=bs;b.play().catch(()=>{})}b.parentNode.hidden=!bs;w.hidden=false;return true}
+  const b=$('#ownboard'),bs=ownBoardStream();if(bs&&b.srcObject!==bs){b.srcObject=bs;b.play().catch(()=>{})}b.parentNode.hidden=!bs;w.hidden=false;if(DB.set.rot20!==false)fitRot(b,boardRot(shareIdx()));else b.style.transform='';return true}
 async function showSelf(){const box=$('#selfcam');if(!box)return;if(await showOwnCard()){box.hidden=true;return}if(!DB.set.faceLabel){box.hidden=true;return}
   const v=$('#selfv');if(v.srcObject&&v.srcObject.active){box.hidden=false;return}if(SELFBUSY)return;SELFBUSY=true;
   const st=await faceStream();SELFBUSY=false;if(!st){box.hidden=true;return}v.srcObject=st;v.play().catch(()=>{});box.hidden=false}
