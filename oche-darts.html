@@ -911,7 +911,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1615';
+const APPV='1630';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -924,7 +924,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 16:15</div>
+   <div class="small muted">Versie 8 nov 16:30</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1625,15 +1625,21 @@ function tick(){
   // lichtverandering (bv. iemand loopt langs, autobelichting): groot deel van het bord verandert tegelijk zonder pijlvorm -> referentie verversen
   for(const i of ids){const rt=CAMRT[i];if(rt.maskN&&rt.chg>rt.maskN*.35&&DET.state!=='takeout'){rt.ref.set(rt.cur);rt.chg=0}}
   if(DET.armT&&performance.now()<DET.armT){ids.forEach(i=>{const rt=CAMRT[i];if(rt.ref&&rt.cur)rt.ref.set(rt.cur)});DET.info='Camera\'s stellen zich in…';updateDetState();return}
+  if(DET.armT){ids.forEach(i=>{const rt=CAMRT[i];if(rt.cur)rt.empty=new Uint8Array(rt.cur)});DET.armT=0}
   if(DET.info==='Camera\'s stellen zich in…')DET.info='Wachten op pijl';
   const frac=Math.max(...ids.map(i=>CAMRT[i].maskN?CAMRT[i].chg/CAMRT[i].maskN:0));
   const MP=DB.set.minPx*PXF;const moving=ids.some(i=>CAMRT[i].mot>MP);
   const dart=ids.some(i=>CAMRT[i].chg>MP);
-  if(frac>0.10&&DET.state!=='takeout'){DET.state='takeout';DET.stable=0}
+  const full=turnFull();
+  if(DET.state!=='takeout'&&(frac>0.10||(full&&(dart||moving)))){DET.state='takeout';DET.stable=0}
   if(DET.state==='takeout'){
-    DET.info='Hand of pijlen uithalen gezien… wacht tot het stil is';
-    if(!moving){DET.stable++;if(DET.stable>=8){resetRefs();DET.info='Wissel';onTakeout()}}else DET.stable=0;
+    DET.info='Pijlen uithalen gezien… wacht tot het stil is';
+    if(!moving){DET.stable++;if(DET.stable>=8){
+      if(boardEmpty(ids)){resetRefs();DET.info='Wissel';onTakeout()}
+      else{ids.forEach(i=>{const rt=CAMRT[i];rt.ref.set(rt.cur)});DET.state='wait';DET.stable=0;DET.settle=0;
+        DET.info=full?'Er zitten nog pijlen in het bord. Corrigeer de score of haal ze eruit.':'Wachten op pijl'}}}else DET.stable=0;
     updateDetState();return}
+  if(full){DET.settle=0;DET.info='Beurt klaar. Corrigeer zo nodig, haal dan de pijlen eruit.';updateDetState();return}
   if(dart&&!moving){DET.settle++;if(DET.settle>=3){detectDart(ids);ids.forEach(i=>{const rt=CAMRT[i];rt.ref.set(rt.cur)});DET.settle=0}}
   else{DET.settle=0;if(!dart){DET.quiet++;if(DET.quiet>40){ids.forEach(i=>CAMRT[i].ref.set(CAMRT[i].cur));DET.quiet=0}}else DET.quiet=0}
   if(!DET.info||DET.info==='Wissel')DET.info='Wachten op pijl';
@@ -1727,6 +1733,13 @@ function detSummary(){const L=DB.set.detlog||[];const seen=L.filter(e=>e.x!=null
   if(!L.length)return '<span class="muted">Nog geen herkenningen gelogd. Verbeter een verkeerd geteld pijl tijdens het spel met <b>Laatste pijl verbeteren</b>, dan zie je hier hoe nauwkeurig de camera\'s zijn.</span>';
   const errs=fx.map(e=>e.err).sort((a,b)=>a-b);return `Herkend: <b>${seen}</b> · genegeerd: <b>${ign}</b> · verbeterd: <b>${fx.length}</b>${errs.length?` (mediaan ${errs[Math.floor(errs.length/2)]} mm ernaast)`:''}`}
 function logDet(e){try{const L=DB.set.detlog=DB.set.detlog||[];e.t=Date.now();L.push(e);if(L.length>300)L.splice(0,L.length-300);save()}catch(x){}}
+// beurt compleet (3 pijlen, bust of uitgegooid) en nog niet doorgegeven: nieuwe beweging = pijlen uithalen, geen nieuwe pijl
+function turnFull(){if(!DET.active||!MATCH||MATCH.saved||!ST||ST.over||isGuestTurn()||isBotTurn())return false;const t=curTurn();return !!(t&&!t.closed&&t.darts.length&&ST.done)}
+// leeg bord? vergelijk met het beeld van het begin van de beurt (toen er geen pijlen in zaten)
+function boardEmpty(ids){const MP=DB.set.minPx*PXF,thr=DB.set.thr+8;let n=0,e=0;
+  for(const i of ids){const rt=CAMRT[i];if(!rt.empty||!rt.cur||rt.empty.length!==rt.cur.length)continue;n++;let c=0;const g=rt.cur,r=rt.empty,m=rt.mask;
+    for(let k=0;k<g.length;k++)if(m[k]&&Math.abs(g[k]-r[k])>thr)c++;if(c<MP*0.7)e++}
+  return !n||e*2>=n}
 function onTakeout(){if(isGuestTurn()||isBotTurn())return;
   if(DET.test){DET.testHits=[];paintTest()}
   if(DET.active&&MATCH&&!MATCH.saved){const t=curTurn();if(t&&!t.closed&&t.darts.length)nextTurn()}
