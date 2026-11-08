@@ -116,7 +116,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 15:35</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 15:40</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -159,7 +159,7 @@ function chip(state,txt){const c=$('#chip');c.className='chip '+state;c.querySel
 const code=(location.hash||'').replace('#','').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
 $('#code').value=code||store.get('oche-gast-code')||'';$('#name').value=store.get('oche-gast-name')||'';
 if(code&&$('#name').value)$('#name').focus();
-if(DEMO&&code){$('#name').value='Testmaat';$('#usecam').checked=false;setTimeout(()=>$('#go').click(),400)}
+if(DEMO&&code){$('#name').value='Testmaat';$('#usecam').checked=new URLSearchParams(location.search).get('demo')==='cam';setTimeout(()=>$('#go').click(),400)}
 try{if(sessionStorage.getItem('oche-upd')&&code&&$('#name').value)setTimeout(()=>$('#go').click(),300)}catch(e){}
 // toetsenbord
 $('#keys').innerHTML=Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')+'<button data-n="25">25</button><button data-n="50">Bull</button><button data-n="0" class="w">Miss</button><button data-n="-1">↶</button>';
@@ -171,6 +171,16 @@ $('#keys').onclick=e=>{const b=e.target.closest('button');if(!b)return;const n=+
   if(navigator.vibrate)try{navigator.vibrate(20)}catch(e){}
   send({t:'dart',n:d.n,m:d.m});MULT=1;paintMult()};
 $('#undo').onclick=()=>send({t:'undo'});$('#next').onclick=()=>send({t:'next'});
+// proefspel: nep-camera die een dartbord filmt (zoals een telefoon voor het bord)
+function demoCam(){const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d');const seq=[20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+  const draw=()=>{x.fillStyle='#cfc8bc';x.fillRect(0,0,640,480);x.save();x.translate(320,235);x.scale(1,.86);const R=170;
+    x.fillStyle='#151515';x.beginPath();x.arc(0,0,R*1.22,0,7);x.fill();
+    for(let i=0;i<20;i++){const a0=(i*18-99)*Math.PI/180,a1=a0+18*Math.PI/180,dk=i%2===0;
+      for(const [r1,r0,col] of [[R,R*.94,dk?'#c62828':'#1b7d3d'],[R*.94,R*.63,dk?'#1c1c1c':'#efe6d0'],[R*.63,R*.57,dk?'#c62828':'#1b7d3d'],[R*.57,R*.1,dk?'#1c1c1c':'#efe6d0']]){x.fillStyle=col;x.beginPath();x.arc(0,0,r1,a0,a1);x.arc(0,0,r0,a1,a0,true);x.closePath();x.fill()}
+      x.save();x.rotate(i*18*Math.PI/180);x.fillStyle='#fff';x.font='bold 22px sans-serif';x.textAlign='center';x.fillText(seq[i],0,-R*1.07);x.restore()}
+    x.fillStyle='#1b7d3d';x.beginPath();x.arc(0,0,R*.1,0,7);x.fill();x.fillStyle='#c62828';x.beginPath();x.arc(0,0,R*.04,0,7);x.fill();x.restore();
+    x.fillStyle='rgba(0,0,0,.6)';x.fillRect(10,440,330,30);x.fillStyle='#fff';x.font='bold 15px sans-serif';x.fillText('Testcamera: bord van je maat '+new Date().toLocaleTimeString('nl'),20,461)};
+  draw();setInterval(draw,250);return c.captureStream(8)}
 function send(m){if(conn&&conn.open){try{conn.send(m)}catch(e){toast('Versturen mislukt')}}else toast('Niet verbonden')}
 
 $('#go').onclick=async()=>{
@@ -179,7 +189,8 @@ $('#go').onclick=async()=>{
   if(!myName){$('#jmsg').textContent='Vul je naam in.';return}
   if(!window.Peer){$('#jmsg').textContent='Deze pagina kon niet volledig laden. Controleer je internet en ververs de pagina.';return}
   store.set('oche-gast-name',myName);store.set('oche-gast-code',c);$('#go').disabled=true;$('#jmsg').textContent='Verbinden…';
-  if($('#usecam').checked){
+  if(DEMO&&$('#usecam').checked){local=demoCam();$('#selfv').srcObject=local}
+  else if($('#usecam').checked){
     try{local=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:960},height:{ideal:720},frameRate:{ideal:24}},audio:false});
       $('#selfv').srcObject=local}
     catch(e){toast('Camera niet beschikbaar: '+(e.name==='NotAllowedError'?'geef toestemming in je browser':e.message));local=null}}
@@ -216,7 +227,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
-const GVER='1535';
+const GVER='1540';
 const STR={board:null,face:null};let SWAP=false,ROT=0;
 function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}

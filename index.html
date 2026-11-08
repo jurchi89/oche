@@ -244,7 +244,7 @@ main:has(#groot){max-width:none;padding-block:10px}
 #groot .tb-darts{grid-template-columns:repeat(3,96px)}
 #groot .tbs b{font-size:28px}
 #groot .tb-sum{font-size:38px;min-width:90px}
-.mrow.onescreen{flex:1;min-height:0;display:grid;grid-template-columns:minmax(220px,1fr) auto minmax(300px,1fr);gap:14px;align-items:stretch}
+.mrow.onescreen{flex:1;min-height:0;display:grid;grid-template-columns:clamp(240px,21vw,380px) minmax(0,1fr) clamp(320px,27vw,520px);gap:14px;align-items:stretch}
 .mrow.onescreen .plist{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto;padding:4px}
 .mrow.onescreen .plist .pc{flex:1 1 auto;min-height:max-content;display:flex;flex-direction:column}
 .mrow.onescreen .plist .pc-in{flex:1;justify-content:center;padding:10px 14px;gap:4px}
@@ -948,7 +948,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1535';
+const APPV='1540';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -961,17 +961,17 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:35</div>
+   <div class="small muted">Versie 8 nov 15:40</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
-   <div class="row"><button class="btn" id="demomate">${DEMOM.on?'Proefspel sluiten':'Proefspel: zie wat je maat ziet'}</button><button class="btn danger" id="closeroom">Online stoppen</button></div>
-   <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat". Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
+   <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
+   <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
 }
 function faceOptions(){const used=DB.cams.map(c=>c.deviceId);const bd=boardDevices().map(d=>d.deviceId);return DEVICES.filter(d=>!bd.includes(d.deviceId)).map(d=>`<option value="${esc(d.deviceId)}" ${DB.set.faceLabel&&d.label===DB.set.faceLabel?'selected':''}>${esc(d.label||'Camera')}${used.includes(d.deviceId)?' (bordcamera)':''}</option>`).join('')}
 function sendBoard(){if(!ONLINE.peer||!ONLINE.conn)return;const st=sharedBoardStream();
   if(!st){toast('Geen bordcamera actief om te delen');return}try{ONLINE.peer.call(ONLINE.conn.peer,st,{metadata:{kind:'board'}})}catch(e){toast('Bordbeeld delen lukt niet: '+e.message)}}
 async function sendFace(){if(!ONLINE.peer||!ONLINE.conn)return;const st=await faceStream();if(!st)return;try{ONLINE.peer.call(ONLINE.conn.peer,st,{metadata:{kind:'face'}})}catch(e){toast('Laptopcamera delen lukt niet: '+e.message)}}
 function bindOnlineSetup(){const bv=$('#bview');if(bv)bv.onchange=()=>{DB.set.boardView=bv.value;save();if(ONLINE.open)sendBoard()};const fc=$('#facecam');if(fc){if(!DEVICES.length&&camSupported())findDevicesQuiet().then(()=>{const f2=$('#facecam');if(f2&&f2.options.length<2)refreshOnlineBox()});
-  fc.onchange=()=>{const d=DEVICES.find(x=>x.deviceId===fc.value);DB.set.faceLabel=d?d.label:'';save();if(ONLINE.face){ONLINE.face.getTracks().forEach(t=>{if(!STREAMS[t.getSettings().deviceId])t.stop()});ONLINE.face=null}if(ONLINE.open)sendFace()}}const sc=$('#sharecam');if(sc)sc.onchange=()=>{DB.set.shareCam=+sc.value;save();if(ONLINE.open)sendBoard()};const b=$('#mkroom');if(b)b.onclick=createRoom;const c=$('#closeroom');if(c)c.onclick=closeRoom;const dm=$('#demomate');if(dm)dm.onclick=()=>DEMOM.on?demoClose():demoOpen();
+  fc.onchange=()=>{const d=DEVICES.find(x=>x.deviceId===fc.value);DB.set.faceLabel=d?d.label:'';save();if(ONLINE.face){ONLINE.face.getTracks().forEach(t=>{if(!STREAMS[t.getSettings().deviceId])t.stop()});ONLINE.face=null}if(ONLINE.open)sendFace()}}const sc=$('#sharecam');if(sc)sc.onchange=()=>{DB.set.shareCam=+sc.value;save();if(ONLINE.open)sendBoard()};const b=$('#mkroom');if(b)b.onclick=createRoom;const c=$('#closeroom');if(c)c.onclick=closeRoom;const dm=$('#demomate');if(dm)dm.onclick=()=>demoOpen(false);const dmc=$('#demomatecam');if(dmc)dmc.onclick=()=>demoOpen(true);const dmx=$('#democlose');if(dmx)dmx.onclick=()=>demoClose();
   const cp=$('#copylink');if(cp)cp.onclick=()=>{const i=$('#glink');navigator.clipboard.writeText(i.value).then(()=>toast('Link gekopieerd'),()=>{i.select();toast('Selecteer en kopieer de link')})};
   if(ONLINE.open){const p2=$('#p2');if(p2){p2.value=ONLINE.guestName;p2.disabled=true}}}
 function refreshOnlineBox(){const b=$('#onlinebox');if(b){b.innerHTML='<h3>Online tegen een maat</h3>'+onlineSetupHTML();bindOnlineSetup()}updateOnlineChip()}
@@ -997,9 +997,9 @@ async function createRoom(){
 }
 // ---------- proefspel: telefoonpagina van de maat als zwevende telefoon op dit scherm ----------
 const DEMOM={on:false,big:true};
-function demoOpen(){if(!ONLINE.code){toast('Maak eerst een code aan');return}demoClose(true);DEMOM.on=true;
+function demoOpen(cam){if(!ONLINE.code){toast('Maak eerst een code aan');return}demoClose(true);DEMOM.on=true;
   const w=document.createElement('div');w.id='demophone';w.className='demophone'+(DEMOM.big?' big':'');
-  w.innerHTML=`<div class="dphead"><b>Zo ziet je maat het</b><span><button id="dpsize" title="Groter/kleiner">⤢</button><button id="dpclose" title="Sluiten">✕</button></span></div><div class="dpscreen"><iframe src="${esc(guestLink().replace('#','&demo=1#'))}" allow="autoplay; fullscreen"></iframe></div>`;
+  w.innerHTML=`<div class="dphead"><b>Zo ziet je maat het</b><span><button id="dpsize" title="Groter/kleiner">⤢</button><button id="dpclose" title="Sluiten">✕</button></span></div><div class="dpscreen"><iframe src="${esc(guestLink().replace('#','&demo='+(cam?'cam':'1')+'#'))}" allow="autoplay; fullscreen"></iframe></div>`;
   document.body.appendChild(w);$('#dpclose').onclick=()=>demoClose();$('#dpsize').onclick=()=>{DEMOM.big=!DEMOM.big;w.classList.toggle('big',DEMOM.big)};refreshOnlineBox()}
 function demoClose(quiet){const w=$('#demophone');if(w)w.remove();const was=DEMOM.on;DEMOM.on=false;if(was&&!quiet)refreshOnlineBox()}
 function closeRoom(){demoClose(true);try{ONLINE.conn&&ONLINE.conn.send({t:'bye'})}catch(e){}try{ONLINE.peer&&ONLINE.peer.destroy()}catch(e){}
