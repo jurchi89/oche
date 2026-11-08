@@ -81,7 +81,7 @@ body.ingame:not(.mine) .pc .big{font-size:40px}
 </style>
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 01:45</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -146,12 +146,12 @@ $('#go').onclick=async()=>{
 };
 function connect(c){
   peer=new Peer({debug:1});
-  peer.on('call',call=>{call.answer();call.on('stream',st=>{const v=$('#facev');v.srcObject=st;v.play().catch(()=>{});$('#face').hidden=false;document.body.classList.add('hasface')})});
+  peer.on('call',call=>{call.answer();call.on('stream',st=>{const face=call.metadata&&call.metadata.kind==='face';const v=face?$('#facev'):$('#hostv');v.srcObject=st;v.play().catch(()=>{});if(face){$('#face').hidden=false;document.body.classList.add('hasface')}})});
   peer.on('open',()=>{
     conn=peer.connect('oche-dart-'+c,{reliable:true});
     const to=setTimeout(()=>{if(!conn.open){$('#jmsg').textContent='Geen verbinding. Klopt de code, en staat Oche bij je maat nog open?';$('#go').disabled=false;chip('bad','Niet verbonden')}},12000);
     conn.on('open',()=>{clearTimeout(to);conn.send({t:'hello',name:myName});chip('ok','Verbonden');$('#join').hidden=true;$('#play').hidden=false;
-      const call=peer.call('oche-dart-'+c,local||blankStream());call.on('stream',st=>{$('#hostv').srcObject=st;$('#hostv').play().catch(()=>{})});
+      if(local)peer.call('oche-dart-'+c,local);
       try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>wake=w).catch(()=>{})}catch(e){}});
     conn.on('data',onMsg);
     conn.on('close',()=>{chip('bad','Verbinding weg');$('#status').textContent='Verbinding verbroken. Ververs de pagina om opnieuw te verbinden.';$('#pad').classList.add('locked')});
