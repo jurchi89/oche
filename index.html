@@ -33,7 +33,8 @@ nav button.on{background:var(--panel2);color:var(--fg)}
 .chip i{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .chip.ok i{background:var(--green)} .chip.warn i{background:var(--gold)} .chip.bad i{background:var(--red)}
 .spacer{flex:1}
-main{padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1500px;margin:0 auto}
+main{padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:none;margin:0 auto}
+main{padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
 h2{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.03em;margin:0 0 12px;text-wrap:balance}
 h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:600}
 .btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-weight:600}
@@ -49,8 +50,8 @@ select,input[type=text]{background:var(--panel2);border:1px solid var(--line);bo
 .small{font-size:13px}
 
 /* setup */
-.setup{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px}
-.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.setup{display:grid;grid-template-columns:minmax(0,1fr) minmax(400px,560px);gap:24px}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
 .gcat{display:flex;align-items:baseline;gap:10px;margin:22px 0 10px}
 .gcat h3{margin:0;font-family:var(--f-display);font-size:26px;letter-spacing:.03em;text-transform:none;color:var(--text)}
 .gcat .gcnt{font-size:12px;font-weight:700;color:#fff;background:var(--cc);border-radius:99px;padding:2px 9px}
@@ -191,6 +192,9 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .ownv .rvid.face video{transform:scaleX(-1)}
 .ownv .rvid:not(.face){aspect-ratio:1/1;max-width:340px;margin:0 auto}
 #ownboard{object-fit:contain;transition:transform .3s}
+.rvid.face.dead{aspect-ratio:auto!important;height:34px;background:#2a2f2c}
+.rvid.face.dead video{visibility:hidden}
+.rvid.face.dead::after{content:'Laptopcamera geeft geen beeld (klepje dicht of in gebruik?)';position:absolute;inset:0;display:flex;align-items:center;padding:0 10px 0 44px;color:#fff;font-size:12px}
 .rvid em{color:#fff;position:absolute;left:8px;bottom:6px;font-style:normal;font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 7px;border-radius:5px}
 .rvid span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:14px}
 /* spelerslijst, start, beurttotaal, 3+ spelers */
@@ -943,7 +947,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1520';
+const APPV='1530';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -956,7 +960,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:20</div>
+   <div class="small muted">Versie 8 nov 15:30</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row"><button class="btn" id="demomate">${DEMOM.on?'Proefspel sluiten':'Proefspel: zie wat je maat ziet'}</button><button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat". Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1855,6 +1859,11 @@ function updateDetState(){const el=$('#dstate');if(el)el.textContent=DET.info;co
 function updateChip(){const n=CAMRT.filter(r=>r.stream).length,k=activeCams().length;const c=$('#camchip');
   c.className='chip '+(k&&!need20()?'ok':n?'warn':'');c.querySelector('span').textContent=k&&need20()?'Gooi een pijl in de 20':k?k+' camera'+(k>1?'\'s':'')+' actief':n?n+' aan, niet gekalibreerd':'Camera\'s uit'}
 setInterval(tick,110);
+// zwart beeld van de laptopcamera herkennen (privacyklepje of camera in gebruik): vak inklappen
+setInterval(()=>{const v=$('#ownface');if(!v)return;const box=v.closest('.rvid');if(!box)return;if(!v.videoWidth){box.classList.remove('dead');return}
+  try{const c=faceDeadCheck.c||(faceDeadCheck.c=document.createElement('canvas'));c.width=32;c.height=18;const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(v,0,0,32,18);const d=x.getImageData(0,0,32,18).data;
+    let s=0,s2=0;for(let k=0;k<d.length;k+=4){const l=(d[k]+d[k+1]+d[k+2])/3;s+=l;s2+=l*l}const n=d.length/4,m=s/n,sd=Math.sqrt(Math.max(0,s2/n-m*m));box.classList.toggle('dead',m<30&&sd<30)}catch(e){}},2000);
+function faceDeadCheck(){}
 
 // tekenen
 function drawCam(i,cv,big){

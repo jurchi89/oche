@@ -66,6 +66,10 @@ body.mine #ownbig{display:none!important}
 @keyframes blink{50%{opacity:.3}}
 .ib{background:none;border:0;color:var(--muted);font-size:19px;width:30px;height:34px;padding:0;border-radius:8px;flex:none}
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
+.stage.center{justify-content:center}
+#vidbox.sq{flex:0 1 auto;width:100%;aspect-ratio:1/1;max-height:100%}
+.facebig{flex:1 1 0;min-height:90px}
+.facebig video{object-fit:cover!important;transform:scaleX(-1)}
 .vid{position:relative;flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#000}
 .vid video{width:100%;height:100%;object-fit:contain;display:block;transform-origin:50% 50%;transition:transform .3s}
 .vid{touch-action:none}
@@ -112,7 +116,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 15:15</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 15:30</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -131,6 +135,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
   <div class="stage">
     <div class="vid ownbig" id="ownbig" hidden><video id="ownbigv" autoplay playsinline muted></video><b>Jouw bord: richt je telefoon zo dat het hele bord in beeld is</b></div>
     <div class="vid" id="vidbox"><div id="zoomer"><video id="hostv" autoplay playsinline muted></video></div><button class="zreset" id="zreset" hidden>1×</button><span class="zhint" id="zhint">Knijp of dubbeltik om in te zoomen</span><b id="hostlab">Bord van je maat</b><div id="overmsg"></div></div>
+    <div class="vid facebig" id="facebig" hidden><video id="facebigv" autoplay playsinline muted></video><b id="facebiglab">Je maat</b></div>
     <div class="route" id="route"></div>
     <div id="pad" class="locked">
       <div class="mult" id="mult"><button data-m="1" class="on">Single</button><button data-m="2">Double</button><button data-m="3">Triple</button></div>
@@ -211,7 +216,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
-const GVER='1515';
+const GVER='1530';
 const STR={board:null,face:null};let SWAP=false,ROT=0;
 function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
@@ -227,7 +232,14 @@ function placeStreams(){const big=$('#hostv'),small=$('#facev');const hn=($('#fa
   if(small.srcObject!==ss){small.srcObject=ss||null;if(ss)small.play().catch(()=>{})}
   $('#face').hidden=!ss;document.body.classList.toggle('swap',SWAP);
   $('#hostlab').textContent=SWAP?hn:'Bord van '+hn;$('#facelab').textContent=SWAP?'Bord':hn;
-  $('#swapbtn').hidden=!STR.face;applyRot()}
+  $('#swapbtn').hidden=!STR.face;applyRot();layoutStage()}
+// bord is vierkant: geen zwarte balken, maar het bord vierkant bovenaan en de laptopcamera van je maat groot eronder
+function layoutStage(){const vb=$('#vidbox'),hv=$('#hostv'),fb=$('#facebig'),fv=$('#facebigv');if(!vb||!fb)return;
+  const sq=!SWAP&&!!STR.board&&hv.videoWidth>0&&Math.abs(hv.videoWidth-hv.videoHeight)<hv.videoWidth*0.2;vb.classList.toggle('sq',sq);
+  const showFace=sq&&!!STR.face;fb.hidden=!showFace;if(showFace){if(fv.srcObject!==STR.face){fv.srcObject=STR.face;fv.play().catch(()=>{})}$('#facebiglab').textContent=($('#facelab').dataset.host)||'Je maat';$('#face').hidden=true}
+  else if(STR.face&&!SWAP)$('#face').hidden=false;
+  document.querySelector('#play .stage').classList.toggle('center',sq&&!showFace)}
+$('#hostv').addEventListener('loadedmetadata',layoutStage);addEventListener('resize',()=>setTimeout(layoutStage,120));
 function doSwap(){if(!STR.face){toast('Je maat deelt geen laptopcamera');return}SWAP=!SWAP;if(typeof zReset==='function')zReset();placeStreams()}
 $('#face').onclick=doSwap;$('#swapbtn').onclick=doSwap;
 // zoomen: knijpen (2 vingers), verschuiven (1 vinger), dubbeltik in/uit, muiswiel op computer
@@ -274,7 +286,7 @@ function onMsg(m){if(!m||typeof m!=='object')return;
   else if(mine){st.textContent=m.done?'Tik op Volgende beurt':'Jouw beurt';st.className='status me'}
   else{st.textContent=m.players[m.cur].name+' gooit';st.className='status'}
   $('#route').innerHTML=mine&&m.route.length?m.route.map(r=>`<span>${esc(r)}</span>`).join(''):(mine&&m.hint?`<span style="background:none;border:0;color:var(--fg)">${esc(m.hint)}</span>`:'');
-  $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);document.body.classList.add('ingame');ownViews(false,mine);
+  $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);document.body.classList.add('ingame');ownViews(false,mine);layoutStage();
 
   $('#facelab').dataset.host=(m.players.find((p,i)=>i!==m.gi)||{name:'je maat'}).name;placeStreams();
   if(mine&&!lastTurnMine&&navigator.vibrate)try{navigator.vibrate([60,40,60])}catch(e){}
