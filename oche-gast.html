@@ -46,6 +46,10 @@ body.ingame .top{display:none}
 .face{cursor:pointer}
 .face video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block}
 body.swap .face video{object-fit:contain}
+.face.own video{transform:none}
+.face.own::after{content:none}
+.vid.ownbig b{right:8px}
+body.mine #ownbig{display:none!important}
 .face::after{content:"⇄";position:absolute;right:4px;top:2px;font-size:12px;color:#fff;background:rgba(0,0,0,.5);border-radius:4px;padding:0 4px}
 .face span{position:absolute;left:4px;bottom:3px;font-size:10px;font-weight:700;background:rgba(0,0,0,.55);padding:0 5px;border-radius:4px}
 .turnrow{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0 4px 0 10px;min-height:46px}
@@ -102,7 +106,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:30</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:35</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -116,9 +120,10 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 </section>
 
 <section id="play" hidden>
-  <div class="bar"><div class="cards" id="cards"></div><div class="face" id="face" hidden><video id="facev" autoplay playsinline muted></video><span id="facelab">Je maat</span></div></div>
+  <div class="bar"><div class="cards" id="cards"></div><div class="face" id="face" hidden><video id="facev" autoplay playsinline muted></video><span id="facelab">Je maat</span></div><div class="face own" id="ownthumb" hidden><video id="ownv" autoplay playsinline muted></video><span>Jouw bord</span></div></div>
   <div class="turnrow"><span class="dot" id="dot" title="Verbinding"></span><div class="d" id="tdarts"><div class="s">·</div><div class="s">·</div><div class="s">·</div></div><div class="t" id="tsum">0</div><div class="status" id="status">Wachten op de start…</div><button class="ib" id="swapbtn" title="Wissel groot beeld: bord of laptopcamera" aria-label="Wissel groot beeld" hidden>⇄</button><button class="ib" id="selfbtn" title="Eigen camera tonen" aria-label="Eigen camera tonen">◉</button><button class="ib" id="fsbtn" title="Volledig scherm" aria-label="Volledig scherm">⛶</button></div>
   <div class="stage">
+    <div class="vid ownbig" id="ownbig" hidden><video id="ownbigv" autoplay playsinline muted></video><b>Jouw bord: richt je telefoon zo dat het hele bord in beeld is</b></div>
     <div class="vid" id="vidbox"><video id="hostv" autoplay playsinline muted></video><b id="hostlab">Bord van je maat</b><div id="overmsg"></div></div>
     <div class="route" id="route"></div>
     <div id="pad" class="locked">
@@ -202,7 +207,7 @@ function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth
   const r=deg*Math.PI/180,c=Math.abs(Math.cos(r)),s=Math.abs(Math.sin(r));const bw=cw*c+ch*s,bh=cw*s+ch*c;const k=Math.min(W/bw,H/bh);
   video.style.transform=`rotate(${deg}deg) scale(${k.toFixed(3)})`}
 function applyRot(){const big=$('#hostv'),small=$('#facev');
-  if(SWAP){big.style.transform='scaleX(-1)';fitRot(small,ROT)}else{fitRot(big,ROT);small.style.transform=''}}
+  if(SWAP){big.style.transform='scaleX(-1)';small.style.transform='none'}else{big.style.transform='';small.style.transform=''}}
 $('#hostv').addEventListener('loadedmetadata',applyRot);$('#facev').addEventListener('loadedmetadata',applyRot);addEventListener('resize',()=>setTimeout(applyRot,100));
 function placeStreams(){const big=$('#hostv'),small=$('#facev');const hn=($('#facelab').dataset.host)||'je maat';
   if(SWAP&&!STR.face)SWAP=false;
@@ -214,6 +219,10 @@ function placeStreams(){const big=$('#hostv'),small=$('#facev');const hn=($('#fa
   $('#swapbtn').hidden=!STR.face;applyRot()}
 function doSwap(){if(!STR.face){toast('Je maat deelt geen laptopcamera');return}SWAP=!SWAP;placeStreams()}
 $('#face').onclick=doSwap;$('#swapbtn').onclick=doSwap;$('#vidbox').ondblclick=doSwap;
+function ownViews(idle,mine){const bb=$('#ownbig'),th=$('#ownthumb'),vb=$('#vidbox');if(!local){bb.hidden=true;th.hidden=true;vb.hidden=false;return}
+  const bv=$('#ownbigv'),tv=$('#ownv');if(bv.srcObject!==local){bv.srcObject=local;bv.play().catch(()=>{})}if(tv.srcObject!==local){tv.srcObject=local;tv.play().catch(()=>{})}
+  bb.hidden=!idle;vb.hidden=idle&&!STR.board?true:false;if(idle){vb.style.flex='0 0 30%'}else vb.style.flex='';
+  th.hidden=!mine;$('#face').style.display=mine?'none':''}
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let lastTurnMine=false;
 function onMsg(m){if(!m||typeof m!=='object')return;
@@ -221,7 +230,7 @@ function onMsg(m){if(!m||typeof m!=='object')return;
   if(m.t==='full'){toast('Er speelt al iemand mee bij je maat');return}
   if(m.t==='bye'){$('#status').textContent='Je maat heeft het online spelen gestopt.';$('#pad').classList.add('locked');return}
   if(m.t!=='state')return;S=m;if(typeof m.rot==='number'&&m.rot!==ROT){ROT=m.rot;applyRot()}
-  if(m.idle){document.body.classList.add('ingame');document.body.classList.remove('mine');$('#status').textContent='Wacht op start door '+(m.host||'je maat');$('#status').className='status';$('#cards').innerHTML=`<div class="pc"><div class="nm">${esc(m.host||'Je maat')}</div><div class="big">–</div><div class="sub">&nbsp;</div></div><div class="pc"><div class="nm">${esc(myName)} (jij)</div><div class="big">–</div><div class="sub">&nbsp;</div></div>`;$('#pad').classList.add('locked');return}
+  if(m.idle){ownViews(true,false);document.body.classList.add('ingame');document.body.classList.remove('mine');$('#status').textContent='Wacht op start door '+(m.host||'je maat');$('#status').className='status';$('#cards').innerHTML=`<div class="pc"><div class="nm">${esc(m.host||'Je maat')}</div><div class="big">–</div><div class="sub">&nbsp;</div></div><div class="pc"><div class="nm">${esc(myName)} (jij)</div><div class="big">–</div><div class="sub">&nbsp;</div></div>`;$('#pad').classList.add('locked');return}
   $('#game').textContent=m.chips.join(' · ');
   $('#cards').innerHTML=m.players.map((p,i)=>`<div class="pc ${i===m.cur&&!m.over?'on':''}"><div class="nm">${esc(p.name)}${i===m.gi?' (jij)':''}</div><div class="big">${esc(p.big)}</div><div class="sub">${esc(p.sub)}</div></div>`).join('');
   const sl=document.querySelectorAll('#tdarts .s');sl.forEach((el,k)=>{const d=m.darts[k];el.textContent=d||'·';el.classList.toggle('f',!!d)});
@@ -234,7 +243,7 @@ function onMsg(m){if(!m||typeof m!=='object')return;
   else if(mine){st.textContent=m.done?'Tik op Volgende beurt':'Jouw beurt';st.className='status me'}
   else{st.textContent=m.players[m.cur].name+' gooit';st.className='status'}
   $('#route').innerHTML=mine&&m.route.length?m.route.map(r=>`<span>${esc(r)}</span>`).join(''):(mine&&m.hint?`<span style="background:none;border:0;color:var(--fg)">${esc(m.hint)}</span>`:'');
-  $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);document.body.classList.add('ingame');
+  $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);document.body.classList.add('ingame');ownViews(false,mine);
 
   $('#facelab').dataset.host=(m.players.find((p,i)=>i!==m.gi)||{name:'je maat'}).name;placeStreams();
   if(mine&&!lastTurnMine&&navigator.vibrate)try{navigator.vibrate([60,40,60])}catch(e){}
