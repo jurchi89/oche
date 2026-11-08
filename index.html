@@ -7,22 +7,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: scorebord naast de oche. Spelers links, bord in het midden, invoer rechts. Bewust één donker thema (bordzwart + sisal + messing). */
+/* Layout: scorebord naast de oche. Spelers links, bord in het midden, invoer rechts. Licht en fris: mintgrijze ondergrond, witte vlakken, warm oranje accent; het bord zelf blijft echt bordzwart. */
 :root{
-  --bg:#101311; --panel:#181d19; --panel2:#1f2520; --line:#2c342e;
-  --fg:#efe8d6; --muted:#a5a08c; --gold:#e1ae4a; --red:#cf3a2d; --green:#2f8b51;
+  --bg:#e4efec; --panel:#ffffff; --panel2:#eef5f3; --line:#d3e2de;
+  --fg:#13201c; --muted:#5d6f6a; --gold:#f25a2c; --accent:#f25a2c; --accent2:#ff8a3d; --red:#d93a2b; --green:#1f9a5b;
   --cream:#e7dcc0; --black:#141414; --wire:#b9b6aa;
   --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
   --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
-  color-scheme:dark;
+  color-scheme:light;
 }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px}
+body{background:linear-gradient(180deg,#c9e3dd 0,#e4efec 260px,#f3f8f6 100%) fixed}
 button,select,input{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .num{font-variant-numeric:tabular-nums}
-header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line);background:var(--panel)}
+header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left,0px));border-bottom:1px solid var(--line);background:rgba(255,255,255,.85);backdrop-filter:blur(8px);box-shadow:0 2px 12px rgba(19,32,28,.05)}
 .brand{font-family:var(--f-display);font-weight:800;font-size:28px;letter-spacing:.06em;line-height:1}
 .brand span{color:var(--gold)}
 nav{display:flex;gap:4px;flex-wrap:wrap}
@@ -37,11 +38,11 @@ h2{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.0
 h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 8px;font-weight:600}
 .btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-weight:600}
 .btn:hover{border-color:var(--muted)}
-.btn.primary{background:var(--gold);color:#1b1505;border-color:var(--gold)}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);border-radius:999px}
 .btn.danger{color:#ff9d92}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 20px rgba(19,32,28,.05)}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted)}
 select,input[type=text]{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0}
 .muted{color:var(--muted)}
@@ -53,7 +54,8 @@ select,input[type=text]{background:var(--panel2);border:1px solid var(--line);bo
 .gcard{text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:4px}
 .gcard b{font-family:var(--f-display);font-size:22px;font-weight:800;letter-spacing:.03em}
 .gcard span{font-size:13px;color:var(--muted);line-height:1.35}
-.gcard.on{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.gcard{background:var(--panel)}
+.gcard.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:#fff4ef}
 .opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
 .seg button{background:var(--panel2);border:0;padding:8px 14px;font-weight:600;color:var(--muted)}
@@ -64,7 +66,7 @@ select,input[type=text]{background:var(--panel2);border:1px solid var(--line);bo
 .game{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,560px) minmax(0,1fr);gap:16px;align-items:start}
 .players{display:flex;flex-direction:column;gap:10px}
 .pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px}
-.pcard.on{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.pcard.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .pcard.out{opacity:.55}
 .pname{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-weight:700;font-size:17px}
 .pname small{font-weight:500;color:var(--muted);font-size:13px}
@@ -139,7 +141,7 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .pcard .big{transition:font-size .35s ease,color .35s}
 .pcard:not(.on) .big{font-size:clamp(40px,4.4vw,64px);color:var(--muted)}
 .pcard.enter{animation:enter .5s ease-out}
-@keyframes enter{0%{box-shadow:0 0 0 0 rgba(225,174,74,.7)}100%{box-shadow:0 0 0 14px rgba(225,174,74,0)}}
+@keyframes enter{0%{box-shadow:0 0 0 0 rgba(242,90,44,.7)}100%{box-shadow:0 0 0 14px rgba(242,90,44,0)}}
 .slot{display:flex;flex-direction:column;justify-content:center;line-height:1.05}
 .slot b{font-size:18px}.slot small{font-size:12px;color:var(--muted);font-weight:600}
 .slot.pop{animation:pop .38s cubic-bezier(.2,1.6,.4,1)}
@@ -147,10 +149,10 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .spark{width:100%;height:30px;display:block}
 .route{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;min-height:48px}
 .rchip{padding:4px 16px;border-radius:99px;border:2px solid var(--gold);color:var(--gold);font-family:var(--f-display);font-weight:800;font-size:26px;animation:pop .3s ease-out}
-.rchip:first-child{background:var(--gold);color:#1b1505}
+.rchip:first-child{background:var(--gold);color:#fff}
 .rtext{font-family:var(--f-display);font-weight:600;font-size:26px;letter-spacing:.02em}
 .callout{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
-.callout span{font-family:var(--f-display);font-weight:800;font-size:clamp(80px,13vw,170px);line-height:1;color:var(--fg);text-shadow:0 6px 40px rgba(0,0,0,.9);animation:call 1.4s ease-out forwards}
+.callout span{font-family:var(--f-display);font-weight:800;font-size:clamp(80px,13vw,170px);line-height:1;color:#fff;text-shadow:0 6px 40px rgba(0,0,0,.9);animation:call 1.4s ease-out forwards}
 .callout .high{color:var(--gold)}
 .callout .max{color:var(--gold);animation:callmax 1.9s ease-out forwards}
 .callout .bust{color:var(--red);animation:shake 1.4s ease-out forwards}
@@ -161,7 +163,7 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .flash{animation:flash .85s ease-out forwards}
 @keyframes flash{0%{opacity:1}100%{opacity:0}}
 .btn.ready{animation:ready 1.2s ease-in-out infinite}
-@keyframes ready{50%{box-shadow:0 0 0 6px rgba(225,174,74,.35)}}
+@keyframes ready{50%{box-shadow:0 0 0 6px rgba(242,90,44,.35)}}
 :fullscreen main{max-width:none}
 
 
@@ -172,7 +174,7 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .guestturn .rvid{aspect-ratio:auto;height:min(42vh,520px)}
 .selfcam{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));width:240px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:2px solid var(--gold);background:#000;z-index:8;box-shadow:0 8px 30px rgba(0,0,0,.6)}
 .selfcam video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
-.selfcam span{position:absolute;left:8px;bottom:6px;font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 7px;border-radius:5px}
+.selfcam span{color:#fff;position:absolute;left:8px;bottom:6px;font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 7px;border-radius:5px}
 .selfcam .ib{position:absolute;right:2px;top:0;width:28px;height:28px;font-size:18px;color:#fff;background:rgba(0,0,0,.35)}
 .ownv{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:8px}
 .ownv .rvid{margin-top:0}
@@ -180,8 +182,43 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .ownv .rvid.face video{transform:scaleX(-1)}
 .ownv .rvid:not(.face){aspect-ratio:1/1;max-width:340px;margin:0 auto}
 #ownboard{object-fit:contain;transition:transform .3s}
-.rvid em{position:absolute;left:8px;bottom:6px;font-style:normal;font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 7px;border-radius:5px}
-.rvid span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px}
+.rvid em{color:#fff;position:absolute;left:8px;bottom:6px;font-style:normal;font-size:12px;font-weight:700;background:rgba(0,0,0,.55);padding:1px 7px;border-radius:5px}
+.rvid span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:14px}
+/* spelerslijst, start, beurttotaal, 3+ spelers */
+.roster{display:flex;flex-direction:column;gap:8px}
+.rrow{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:6px 8px}
+.rrow input,.rrow select{flex:1;min-width:0;background:#fff}
+.rrow .av{width:32px;height:32px;border-radius:50%;background:var(--fg);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:18px;flex:none}
+.rrow .botav{background:var(--accent)}
+.rrow b{font-family:var(--f-display);font-size:18px;letter-spacing:.03em}
+.rrow .lvinfo{white-space:nowrap}
+.tnum{background:var(--fg);color:#fff;border-radius:6px;padding:1px 6px;font-size:12px;font-weight:700}
+.startbox{max-width:720px}
+.startopts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.sopt{display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 16px;border-radius:16px;border:1px solid var(--line);background:var(--panel2);text-align:center}
+.sopt:hover{border-color:var(--accent);background:#fff4ef}
+.sopt b{font-family:var(--f-display);font-size:30px;font-weight:800;letter-spacing:.03em}
+.sopt span{color:var(--muted);font-size:14px}
+.coin{width:120px;height:120px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:56px;font-weight:800;animation:flip .35s linear infinite}
+.coin.done{animation:none}
+@keyframes flip{50%{transform:scaleX(.08)}}
+.bullwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:center}
+.bullnow{font-family:var(--f-display);font-size:28px;font-weight:800}
+.choice{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.choice .btn{font-size:24px;font-weight:800;padding:16px 0}
+.totpad{display:flex;flex-direction:column;gap:8px;max-width:420px}
+.totdisp{font-family:var(--f-display);font-weight:800;font-size:56px;text-align:right;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:4px 16px}
+.tkeys{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.tkeys button{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 0;font-weight:800;font-size:22px}
+.tkeys .ok{background:var(--green);color:#fff;border-color:var(--green)}
+.mrow.many{grid-template-columns:minmax(0,1fr) minmax(0,min(560px,calc(100vh - 260px))) minmax(0,.8fr)}
+.plist{display:flex;flex-direction:column;gap:8px}
+.plist .pc-in{padding:10px 14px;gap:2px}
+.plist .pc .big{font-size:clamp(40px,4.5vw,64px)}
+.plist .pc:not(.on) .big{font-size:clamp(34px,3.6vw,52px)}
+.plist .spark,.plist .hist{display:none}
+.plist .pc.on{transform:none}
+@media (max-width:760px){.bullwrap{grid-template-columns:1fr}}
 /* wedstrijdscherm */
 #groot{display:flex;flex-direction:column;gap:14px}
 .mtop{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:start}
@@ -206,24 +243,33 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .camst{display:flex;align-items:center;gap:10px;align-self:flex-start}
 .cambtn{display:inline-flex;align-items:center;gap:6px;background:var(--panel);border:2px solid var(--line);border-radius:10px;padding:7px 14px;font-weight:700;color:var(--muted)}
 .cambtn.on{border-color:var(--gold);color:var(--fg)}
-.boardwrap.glow{width:100%;border-radius:50%;box-shadow:0 0 0 3px rgba(225,174,74,.55),0 0 46px rgba(225,174,74,.22)}
+.boardwrap.glow{width:100%;border-radius:50%;box-shadow:0 0 0 3px rgba(242,90,44,.55),0 0 46px rgba(242,90,44,.22)}
 .pc{position:relative;border-radius:18px;background:var(--panel);border:1px solid var(--line);overflow:hidden;transition:transform .35s ease,background .35s,opacity .35s}
 .pc-in{padding:22px 22px 18px;display:flex;flex-direction:column;align-items:center;gap:6px}
-.pc.on{background:linear-gradient(150deg,#3a2f14 0%,#2a2416 45%,var(--panel) 100%);border-color:var(--gold);transform:translateY(-4px)}
+.pc.on{background:linear-gradient(160deg,var(--accent2) 0%,var(--accent) 60%);border-color:var(--accent);color:#fff;transform:translateY(-4px);box-shadow:0 12px 30px rgba(242,90,44,.28)}
+.pc.on .pc-sub,.pc.on .pc-darts,.pc.on .hist{color:#fff}
+.pc.on .big{color:#fff!important}
+.pc.on .legs{background:#fff;color:var(--accent)}
+.pc.on .pc-name{background:rgba(255,255,255,.18)}
+.pc.on .pc-name .tag{color:#fff}
+.pc.on .prog i{background:#fff}
+.pc.on .co span{background:#fff;color:var(--accent);border-color:#fff}
+.pc.on .spark path{stroke:#fff}
 .pc.out{opacity:.55}
 .pc.enter{animation:enter .5s ease-out}
-.pc-name{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:99px;padding:4px 16px 4px 4px;max-width:100%}
+.pc-name{display:flex;align-items:center;gap:8px;background:var(--panel2);border-radius:99px;padding:4px 16px 4px 4px;max-width:100%}
 .pc-name .dot{width:8px;height:8px;border-radius:50%;background:transparent;margin-left:6px}
-.pc.on .pc-name .dot{background:var(--gold)}
-.pc-name .av{width:34px;height:34px;border-radius:50%;background:var(--gold);color:#1b1505;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:20px;flex:none}
+.pc.on .pc-name .dot{background:#fff}
+.pc-name .av{width:34px;height:34px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--f-display);font-weight:800;font-size:20px;flex:none}
 .pc-name .nm{font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pc-name .tag{color:var(--gold);font-weight:700}
 .pc-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;width:100%}
 .co{display:flex;flex-direction:column;gap:6px;align-items:flex-end}
 .co span{background:var(--panel2);border:1px solid var(--line);color:var(--gold);font-family:var(--f-display);font-weight:800;font-size:22px;padding:4px 12px;border-radius:8px;animation:pop .3s ease-out}
 .pc .big{font-size:clamp(70px,8.5vw,140px);color:var(--fg);text-align:center}
+.pc{box-shadow:0 6px 20px rgba(19,32,28,.06)}
 .pc:not(.on) .big{color:var(--muted);font-size:clamp(70px,8.5vw,140px)}
-.legs{background:var(--bg);border-radius:8px;padding:4px 12px;font-family:var(--f-display);font-weight:800;font-size:26px;justify-self:start}
+.legs{background:var(--fg);color:#fff;border-radius:8px;padding:4px 12px;font-family:var(--f-display);font-weight:800;font-size:26px;justify-self:start}
 .pc-sub{font-size:20px;color:var(--fg);text-align:center}
 .pc-sub b{font-weight:700}
 .pc-darts{display:flex;align-items:center;gap:6px;font-size:20px;font-weight:600}
@@ -332,7 +378,7 @@ function checkout(rem,darts,out){
 // ---------- Spel-engines ----------
 function base(pl){
   return {players:pl.map(p=>({id:p.id,name:p.name,out:false,elim:false})),cur:0,over:false,winner:null,td:0,done:false,
-    turnNo:0,darts:[],tdarts:[],tpts:0,msg:'',next:null,stat:pl.map(()=>({darts:0})),hist:pl.map(()=>[])};
+    turnNo:0,darts:[],tdarts:[],tpts:0,msg:'',next:null,stat:pl.map(()=>({darts:0})),hist:pl.map(()=>[]),tc:pl.map(()=>0)};
 }
 function eBegin(G,st){st.td=0;st.done=false;st.tdarts=[];st.tpts=0;st.msg='';st.next=null;G.begin&&G.begin(st);}
 function eDart(G,st,d){
@@ -358,16 +404,18 @@ const optRounds=(d,list)=>({k:'rounds',l:'Rondes',v:list,d});
 
 const GAMES={};
 GAMES.x01={name:'X01',desc:'301, 501 of meer precies naar nul. Legs, double-in en -out instelbaar.',min:1,
-  opts:[{k:'start',l:'Startscore',v:[101,170,201,301,501,701,901,1001,1501],d:501},
+  opts:[{k:'start',l:'Startscore',v:[101,121,170,201,301,401,501,601,701,801,901,1001,1501,2001],d:501},
     {k:'in',l:'Inmaken',v:[['straight','Straight in'],['double','Double in'],['master','Master in']],d:'straight'},
     {k:'out',l:'Uitmaken',v:[['double','Double out'],['master','Master out'],['straight','Straight out']],d:'double'},
-    {k:'legs',l:'Legs (first to)',v:[1,2,3,4,5,6,7,9,11],d:1}],
+    {k:'fmt',l:'Formaat',v:[['first','First to'],['best','Best of']],d:'first'},
+    {k:'count',l:'Aantal',v:[1,2,3,4,5,6,7,9,11,13],d:1},
+    {k:'unit',l:'In',v:[['legs','Legs'],['sets','Sets (3 legs per set)']],d:'legs'}],
   create(pl,o){const st=base(pl);st.o=o;st.legStart=0;st.legNo=1;
-    st.players.forEach(p=>{p.score=+o.start;p.in=o.in==='straight';p.legs=0;p.ld=0;p.lp=0});
+    st.players.forEach(p=>{p.score=+o.start;p.in=o.in==='straight';p.legs=0;p.sets=0;p.ld=0;p.lp=0});st.setNo=1;
     st.stat=pl.map(()=>({darts:0,pts:0,f9d:0,f9p:0,s180:0,s140:0,s100:0,hiCo:0,coAtt:0,coHit:0,legs:0,best:0}));return st},
   begin(st){const p=st.players[st.cur];st.ts=p.score;st.tin=p.in;st.sc=0;st.tf9=0;st.bust=false;st.leg=false},
   dart(st,d){const o=st.o,p=st.players[st.cur],s=st.stat[st.cur],v=val(d);
-    if(p.in&&oneDart(p.score,o.out)) s.coAtt++;
+    if(!d.syn&&p.in&&oneDart(p.score,o.out)) s.coAtt++;
     p.ld++; const f9=p.ld<=9; if(f9) s.f9d++;
     if(!p.in){ if(o.in==='double'?d.m===2:d.m>=2) p.in=true; else return; }
     const ns=p.score-v; const okOut=o.out==='straight'||(o.out==='double'?d.m===2:d.m>=2);
@@ -376,16 +424,19 @@ GAMES.x01={name:'X01',desc:'301, 501 of meer precies naar nul. Legs, double-in e
     p.score=ns;s.pts+=v;st.sc+=v;p.lp+=v;if(f9){s.f9p+=v;st.tf9+=v}
     if(ns===0){s.coHit++;s.hiCo=Math.max(s.hiCo,st.ts);p.legs++;s.legs++;s.best=s.best?Math.min(s.best,p.ld):p.ld;
       st.done=true;st.leg=true;st.msg='Game shot';
-      if(p.legs>=+o.legs){st.over=true;st.winner=st.cur;}}
+      const T=x01Target(o);
+      if((o.unit||'legs')==='sets'){if(p.legs>=3){p.sets++;st.setWon=true;st.msg='Set!';if(p.sets>=T){st.over=true;st.winner=st.cur}}}
+      else if(p.legs>=T){st.over=true;st.winner=st.cur;}}
   },
   end(st){const s=st.stat[st.cur];
     if(!st.bust){const t=st.sc;if(t===180)s.s180++;else if(t>=140)s.s140++;else if(t>=100)s.s100++;}
     st.hist[st.cur].push(st.bust?'Bust':String(st.sc));
     if(st.leg){const n=st.players.length;st.legStart=(st.legStart+1)%n;st.legNo++;
-      st.players.forEach(q=>{q.score=+st.o.start;q.in=st.o.in==='straight';q.ld=0;q.lp=0});st.next=st.legStart;}
+      st.players.forEach(q=>{q.score=+st.o.start;q.in=st.o.in==='straight';q.ld=0;q.lp=0;if(st.setWon)q.legs=0});if(st.setWon){st.setWon=false;st.setNo++}st.next=st.legStart;}
   },
   big:(st,i)=>st.players[i].score,
-  sub(st,i){const s=st.stat[i];return 'Gem. '+avg3(s.pts,s.darts)+(+st.o.legs>1?' · Legs '+st.players[i].legs:'')},
+  sub(st,i){const s=st.stat[i],p=st.players[i],o=st.o;return 'Gem. '+avg3(s.pts,s.darts)+((o.unit||'legs')==='sets'?' · Sets '+p.sets+' · Legs '+p.legs:x01Target(o)>1?' · Legs '+p.legs:'')},
+  meta(st,m){st.stat[st.cur].coAtt+=(+m.dbl||0)},
   sugg(st){const p=st.players[st.cur],o=st.o;if(!p.in||st.done)return null;
     return p.score<=(o.out==='straight'?180:170)?checkout(p.score,3-st.td,o.out):null},
   hint(st){const p=st.players[st.cur];if(!p.in)return st.o.in==='double'?'Begin met een dubbel':'Begin met een dubbel of triple';
@@ -393,6 +444,7 @@ GAMES.x01={name:'X01',desc:'301, 501 of meer precies naar nul. Legs, double-in e
   targets(st){const c=this.sugg(st);return c?[{n:c[0].n,m:c[0].m}]:[]},
   sum(st,i){return Object.assign({},st.stat[i],{score:st.players[i].score})}
 };
+function x01Target(o){if(o.count==null&&o.legs!=null)return +o.legs||1;const n=+o.count||1;return o.fmt==='best'?Math.ceil((n+1)/2):n}
 function avg3(p,d){return d?(p/d*3).toFixed(1):'0.0'}
 
 function cricketGame(name,desc,nums){return {name,desc,min:1,
@@ -698,7 +750,7 @@ const CATS={wedstrijd:'Wedstrijd',training:'Training',partij:'Partijspellen'};
 Object.entries({"x01": "wedstrijd", "cricket": "wedstrijd", "tactics": "wedstrijd", "countup": "training", "atc": "training", "shanghai": "partij", "bobs": "training", "halveit": "partij", "bermuda": "partij", "killer": "partij", "gotcha": "partij", "checkout": "training", "doubles": "training", "segment": "training"}).forEach(([k,c])=>{if(GAMES[k])GAMES[k].cat=c});
 function runMatch(m){
   const G=GAMES[m.game];const st=G.create(m.players,m.opts);eBegin(G,st);
-  for(const t of m.turns){for(const d of t.darts)eDart(G,st,d);if(t.closed){eEnd(G,st);if(!st.over)eBegin(G,st);}}
+  for(const t of m.turns){for(const d of t.darts)eDart(G,st,d);if(t.closed){if(t.meta&&G.meta)G.meta(st,t.meta);st.tc[st.cur]=(st.tc[st.cur]||0)+1;eEnd(G,st);if(!st.over)eBegin(G,st);}}
   return st;
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -730,7 +782,7 @@ function say(t){if(!DB.set.voice||!window.speechSynthesis)return;try{speechSynth
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1155';
+const APPV='1300';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -743,7 +795,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="front" ${(DB.set.boardView||'front')==='front'?'selected':''}>Recht van voren, 20 boven</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 11:55</div>
+   <div class="small muted">Versie 8 nov 13:00</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -845,6 +897,121 @@ async function showSelf(){const box=$('#selfcam');if(!box)return;if(await showOw
   const v=$('#selfv');if(v.srcObject&&v.srcObject.active){box.hidden=false;return}if(SELFBUSY)return;SELFBUSY=true;
   const st=await faceStream();SELFBUSY=false;if(!st){box.hidden=true;return}v.srcObject=st;v.play().catch(()=>{});box.hidden=false}
 
+
+// ---------- DartBot ----------
+// Gooit echt: mikt op een doel en krijgt een afwijking (mm); op dubbels mikt hij preciezer, zoals echte spelers.
+// afgestemd met simulatie van complete 501-legs (inclusief uitgooien): niveau 1 ≈ 18 gemiddeld, niveau 7 ≈ 44, niveau 20 ≈ 100
+const BOT_SIG=[64,54,44,37,31,26.5,22.5,19.5,17.5,15.8,14.4,13.2,12.2,11.3,10.5,9.8,9.1,8.5,7.9,7.4];
+function botAvg(L){return 18+4.3*(L-1)}
+function botSigma(L){return BOT_SIG[Math.max(1,Math.min(20,Math.round(L)))-1]}
+function gaussR(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function actor(i){if(!MATCH||!ST)return null;i=i==null?ST.cur:i;const p=MATCH.players[i];if(!p)return null;if(p.members&&p.members.length)return p.members[(ST.tc[i]||0)%p.members.length];return p}
+function isBotTurn(){if(!MATCH||!ST||ST.over)return false;const a=actor();return !!(a&&a.bot)}
+function botAim(){const G=GAMES[MATCH.game],g=MATCH.game;let t=null;
+  if(G.sugg){const r=G.sugg(ST);if(r&&r.length)t={n:r[0].n,m:r[0].m}}
+  if(!t&&g==='x01'){const p=ST.players[ST.cur];if(!p.in)t={n:20,m:2};else if(p.score<=60){const left=p.score;const set=[32,40,16,24,8,36,20,12].find(x=>left-x>=1&&left-x<=20);if(set)t={n:left-set,m:1}}}
+  if(!t&&g==='gotcha'){const need=+ST.o.target-ST.players[ST.cur].score;if(need<=20)t={n:need,m:1};else if(need<=60&&need%3===0)t={n:need/3,m:3}}
+  if(!t){const tg=G.targets?G.targets(ST)||[]:[];if(tg.length){const x=tg[0];t={n:x.n,m:x.m||((g==='cricket'||g==='tactics'||g==='segment')&&x.n!==25?3:x.n===25?2:1)}}}
+  return t||{n:20,m:3}}
+function botThrow(L){const t=botAim();const [ax,ay]=segPoint(t.n,t.m);const sg=botSigma(L)*(t.m===2?0.6:t.n===25?0.8:1);
+  const x=ax+gaussR()*sg,y=ay+gaussR()*sg;const d=scoreAt(x,y);return {n:d.n,m:d.m,x,y,src:'bot'}}
+const BOT={t:null};
+function botTick(){if(BOT.t||!MATCH||MATCH.saved||!ST||ST.over)return;const a=actor();if(!a||!a.bot)return;
+  BOT.t=setTimeout(()=>{BOT.t=null;if(!MATCH||MATCH.saved||ST.over)return;const a2=actor();if(!a2||!a2.bot)return;
+    if(ST.done)nextTurn(true);else addDart(botThrow(a2.bot))},ST.done?1400:900)}
+function botStop(){clearTimeout(BOT.t);BOT.t=null}
+
+
+// ---------- Spelerslijst (tot 4, mensen en DartBots) ----------
+function rosterInit(){const L=DB.set.last;if(!Array.isArray(L.roster)){L.roster=[{type:'p',name:L.p1||''}];if(L.p2)L.roster.push({type:'p',name:L.p2})}return L.roster}
+function rosterCount(){return rosterInit().length}
+function botInfo(l){const a=botAvg(+l);return Math.round(a-5)+'–'+Math.round(a+5)+' gem.'}
+function rosterHTML(){const R=rosterInit(),L=DB.set.last;const lim=ONLINE.open?1:4;
+  return R.slice(0,lim).map((r,i)=>{const team=L.teams&&!ONLINE.open?`<span class="tnum">T${Math.floor(i/2)+1}</span>`:'';
+    if(r.type==='bot')return `<div class="rrow bot" data-i="${i}">${team}<span class="av botav">B</span><b>DartBot</b><select data-lv>${Array.from({length:20},(_,k)=>`<option value="${k+1}" ${+r.level===k+1?'selected':''}>Niveau ${k+1}</option>`).join('')}</select><span class="small muted lvinfo">${botInfo(r.level)}</span><button class="ib rm" title="Verwijderen" aria-label="Verwijderen">×</button></div>`;
+    return `<div class="rrow" data-i="${i}">${team}<span class="av">${esc((r.name||'?').slice(0,1).toUpperCase())}</span><input type="text" list="pnames" value="${esc(r.name||'')}" placeholder="Naam speler ${i+1}" data-nm>${R.length>1?'<button class="ib rm" title="Verwijderen" aria-label="Verwijderen">×</button>':''}</div>`}).join('')}
+function readRoster(){const R=rosterInit();$$('#roster .rrow').forEach(row=>{const i=+row.dataset.i;const nm=$('[data-nm]',row),lv=$('[data-lv]',row);if(nm)R[i].name=nm.value;if(lv)R[i].level=+lv.value});save()}
+function bindRoster(){const R=rosterInit(),L=DB.set.last;
+  const redraw=()=>{readRoster();renderSetup()};
+  $$('#roster .rm').forEach(b=>b.onclick=()=>{readRoster();R.splice(+b.closest('.rrow').dataset.i,1);if(!R.length)R.push({type:'p',name:''});save();renderSetup()});
+  $$('#roster [data-lv]').forEach(sl=>sl.onchange=()=>{readRoster();sl.closest('.rrow').querySelector('.lvinfo').textContent=botInfo(sl.value)});
+  $$('#roster [data-nm]').forEach(inp=>inp.onchange=()=>readRoster());
+  const ap=$('#addp');if(ap)ap.onclick=()=>{readRoster();if(R.length>=4){toast('Maximaal 4 spelers');return}R.push({type:'p',name:''});save();renderSetup();setTimeout(()=>{const ins=$$('#roster [data-nm]');ins.length&&ins[ins.length-1].focus()},30)};
+  const ab=$('#addbot');if(ab)ab.onclick=()=>{readRoster();if(R.length>=4){toast('Maximaal 4 spelers');return}R.push({type:'bot',level:+(DB.set.botLevel||7)});save();renderSetup()};
+  $$('#teamseg button').forEach(b=>b.onclick=()=>{readRoster();L.teams=b.dataset.t==='1';save();renderSetup()});
+  $$('#roster [data-lv]').forEach(sl=>sl.addEventListener('change',()=>{DB.set.botLevel=+sl.value;save()}));}
+
+// ---------- Wie begint: bullen of munt ----------
+const BULL={active:false,pl:null,i:0,res:[],go:null,cands:null};
+function chooseStarter(pl,go){if(pl.length<2){go(pl);return}
+  $('#overlay').innerHTML=`<div class="ov"><div class="box stack startbox"><h2>Wie gooit als eerst?</h2>
+    <div class="startopts">${MATCH&&MATCH.online||ONLINE.open?'':'<button class="sopt" id="sbull"><svg viewBox="-60 -60 120 120" width="72" height="72" aria-hidden="true"><circle r="56" fill="#141414"/><circle r="40" fill="none" stroke="#cf3a2d" stroke-width="6"/><circle r="18" fill="#2f8b51"/><circle r="8" fill="#cf3a2d"/></svg><b>Bullen</b><span>Ieder gooit één pijl op de bull. Wie het dichtst bij zit, begint.</span></button>'}
+      <button class="sopt" id="scoin"><svg viewBox="-60 -60 120 120" width="72" height="72" aria-hidden="true"><circle r="50" fill="var(--accent)"/><circle r="40" fill="none" stroke="#fff" stroke-width="4" opacity=".6"/><text y="14" text-anchor="middle" font-size="40" font-weight="800" fill="#fff">€</text></svg><b>Munt opgooien</b><span>Het toeval bepaalt wie begint.</span></button></div>
+    <div class="row" style="justify-content:space-between"><button class="btn" id="scancel">Terug</button><button class="btn" id="sskip">Overslaan, ${esc(pl[0].name)} begint</button></div></div></div>`;
+  $('#scancel').onclick=()=>{$('#overlay').innerHTML=''};
+  $('#sskip').onclick=()=>{$('#overlay').innerHTML='';go(pl)};
+  $('#scoin').onclick=()=>coinToss(pl,go);
+  const sb=$('#sbull');if(sb)sb.onclick=()=>startBull(pl,go);}
+function rotateTo(pl,w){return pl.slice(w).concat(pl.slice(0,w))}
+function coinToss(pl,go){const w=Math.floor(Math.random()*pl.length);
+  $('#overlay').innerHTML=`<div class="ov"><div class="box stack startbox" style="align-items:center;text-align:center"><div class="coin" id="coin">€</div><h2 id="coinres">De munt draait…</h2><button class="btn primary" id="cgo" hidden>Start spel</button></div></div>`;
+  let k=0;const names=pl.map(p=>p.name);const iv=setInterval(()=>{$('#coinres').textContent=names[k++%names.length]},110);
+  setTimeout(()=>{clearInterval(iv);$('#coinres').textContent=pl[w].name+' begint';say(pl[w].name+' begint');$('#cgo').hidden=false;$('#coin').classList.add('done')},1700);
+  $('#cgo').onclick=()=>{$('#overlay').innerHTML='';go(rotateTo(pl,w))}}
+function bullThrower(){const p=BULL.pl[BULL.cands[BULL.i]];return p.members?p.members[0]:p}
+function startBull(pl,go){Object.assign(BULL,{active:true,pl,go,i:0,res:[],cands:pl.map((_,k)=>k)});
+  if(DB.set.last.input==='cam'&&camSupported()){startAllCams().then(()=>resetRefs())}
+  renderBull()}
+function renderBull(){const done=BULL.i>=BULL.cands.length;const th=done?null:bullThrower();
+  $('#overlay').innerHTML=`<div class="ov"><div class="box stack startbox"><h2>Bullen</h2>
+    <div class="bullwrap"><div class="boardwrap" style="max-width:340px;margin:0 auto">${boardSVG('bboard')}</div>
+      <div class="stack" style="min-width:0"><div class="bullnow">${done?'Klaar':esc(th.name)+' gooit op de bull'}</div>
+        <div class="small muted">${done?'':(th.bot?'De DartBot gooit…':'Klik op het bord waar je pijl zit'+(DB.set.last.input==='cam'?', of gooi: de camera\'s tellen mee':''))}</div>
+        <table class="t"><tr><th>Speler</th><th>Afstand tot bull</th></tr>${BULL.pl.map((p,k)=>`<tr><td>${esc(p.name)}</td><td class="num">${BULL.res[k]!=null?BULL.res[k].toFixed(1)+' mm':'–'}</td></tr>`).join('')}</table>
+        <div id="bullres"></div></div></div>
+    <div class="row" style="justify-content:space-between"><button class="btn" id="bstop">Stoppen</button><button class="btn primary" id="bgo" hidden>Start spel</button></div></div></div>`;
+  const svg=$('#bboard');$('.marks',svg).innerHTML=BULL.pl.map((p,k)=>BULL.res[k]!=null&&BULL.pos&&BULL.pos[k]?`<g><circle cx="${BULL.pos[k][0]}" cy="${-BULL.pos[k][1]}" r="7" fill="var(--accent)" stroke="#fff" stroke-width="2"/><text x="${BULL.pos[k][0]}" y="${-BULL.pos[k][1]-12}" font-size="12" font-weight="700" text-anchor="middle" fill="#fff" stroke="#000" stroke-width="3" paint-order="stroke">${esc(p.name.slice(0,10))}</text></g>`:'').join('');
+  $('.hl',svg).innerHTML=done?'':hlPaths([{n:25,m:2}]);
+  svg.addEventListener('click',e=>{if(BULL.i>=BULL.cands.length||bullThrower().bot)return;const [x,y]=svgToMM(svg,e);bullDart({x,y,src:'click'})});
+  $('#bstop').onclick=()=>{BULL.active=false;$('#overlay').innerHTML=''};
+  if(done){const ds=BULL.cands.map(k=>BULL.res[k]);const best=Math.min(...ds);const tied=BULL.cands.filter(k=>Math.abs(BULL.res[k]-best)<1);
+    if(tied.length>1){$('#bullres').innerHTML=`<b>Gelijk!</b> ${tied.map(k=>esc(BULL.pl[k].name)).join(' en ')} gooien opnieuw.`;setTimeout(()=>{BULL.cands=tied;BULL.i=0;tied.forEach(k=>BULL.res[k]=null);renderBull()},1800);return}
+    const w=tied[0];$('#bullres').innerHTML=`<p class="win" style="font-size:34px">${esc(BULL.pl[w].name)} begint</p>`;say(BULL.pl[w].name+' begint');$('#bgo').hidden=false;
+    $('#bgo').onclick=()=>{BULL.active=false;$('#overlay').innerHTML='';BULL.go(rotateTo(BULL.pl,w))};return}
+  if(th.bot)setTimeout(()=>{if(!BULL.active)return;const sg=botSigma(th.bot)*0.8;bullDart({x:gaussR()*sg,y:gaussR()*sg,src:'bot'})},1100)}
+function bullDart(d){if(!BULL.active||BULL.i>=BULL.cands.length)return;if(d.x==null)return;const k=BULL.cands[BULL.i];BULL.res[k]=Math.hypot(d.x,d.y);BULL.pos=BULL.pos||[];BULL.pos[k]=[d.x,d.y];BULL.i++;sfx(d);renderBull()}
+
+
+// ---------- Beurttotaal invoeren (X01 / Count Up) ----------
+const IMPOSSIBLE=new Set([163,166,169,172,173,175,176,178,179]);
+const ALLT=[{n:0,m:0}].concat(THROWS);
+function decomp(v,k,ok){for(let a=0;a<ALLT.length;a++){const A=ALLT[a];if(k===1){if(val(A)===v&&ok([A]))return [A];continue}
+    for(let b=0;b<ALLT.length;b++){const B=ALLT[b];if(k===2){if(val(A)+val(B)===v&&ok([A,B]))return [A,B];continue}
+      const r=v-val(A)-val(B);if(r<0||r>60)continue;for(const C of ALLT){if(val(C)===r&&ok([A,B,C]))return [A,B,C]}}}return null}
+function askChoice(title,sub,opts){return new Promise(res=>{$('#overlay').innerHTML=`<div class="ov"><div class="box stack startbox" style="max-width:460px"><h2>${esc(title)}</h2>${sub?`<div class="muted">${esc(sub)}</div>`:''}<div class="choice">${opts.map(o=>`<button class="btn" data-v="${o}">${o}</button>`).join('')}</div></div></div>`;
+  $$('.choice button').forEach(b=>b.onclick=()=>{$('#overlay').innerHTML='';res(+b.dataset.v)})})}
+async function submitTotal(v){
+  if(!MATCH||MATCH.saved||ST.over)return;if(isBotTurn()||isGuestTurn()){toast('Je bent niet aan de beurt');return}
+  if(v>180||IMPOSSIBLE.has(v)){toast(v+' kan niet met drie pijlen');return}
+  const t0=curTurn();if(t0&&!t0.closed&&t0.darts.length){toast('Maak eerst deze beurt af of maak de pijlen ongedaan');return}
+  let darts=null,meta=null;
+  if(MATCH.game==='countup'){darts=decomp(v,3,()=>true)}
+  else{const p=ST.players[ST.cur],o=ST.o,rem=p.score,out=o.out;
+    const fin=v===rem&&p.in&&checkout(rem,3,out);
+    if(fin){const ks=[1,2,3].filter(k=>checkout(rem,k,out));const k=ks.length===1?ks[0]:await askChoice('Uitgegooid!','Met hoeveel pijlen?',ks);
+      const dbl=out==='straight'?0:await askChoice('Pijlen op de dubbel','Hoeveel pijlen gooide je op een dubbel?',Array.from({length:k},(_,i)=>i+1));
+      const r=checkout(rem,k,out);darts=Array.from({length:k-r.length},()=>({n:0,m:0})).concat(r);meta={dbl:Math.max(0,dbl-1)}}
+    else{const bust=v>rem||(out!=='straight'&&rem-v===1)||v===rem;
+      const ok=ds=>{let r=rem,inn=p.in;for(let q=0;q<ds.length;q++){const d=ds[q];if(!inn){if(!(o.in==='double'?d.m===2:d.m>=2)){if(val(d))return false;continue}inn=true}r-=val(d);if(!bust&&(r<=0||(r===1&&out!=='straight')))return false}return true};
+      darts=(!p.in&&!bust)?decomp(v,3,ok):decomp(v,3,bust?()=>true:ok);
+      if(rem<=170&&p.in&&(rem<=50||rem-v<=50||bust)&&out!=='straight'){const dbl=await askChoice('Pijlen op de dubbel','Hoeveel pijlen gooide je op een dubbel?',[0,1,2,3]);meta={dbl}}}}
+  if(!darts){toast('Deze score kan ik niet verwerken');return}
+  darts=darts.map(d=>Object.assign({},d,{syn:true}));
+  if(t0&&!t0.closed&&!t0.darts.length)MATCH.turns.pop();
+  MATCH.turns.push({darts,closed:true,meta});
+  const before=ST;refresh();callout(String(v),v===180?'max':v>=100?'high':'');if(DB.set.voice)say(String(v));
+}
+
 // ---------- Navigatie ----------
 let VIEW='play';
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;show(b.dataset.v)});
@@ -867,10 +1034,10 @@ function boardSVG(id){
   s+=`</g><g class="hl"></g><g class="marks"></g></svg>`;return s;
 }
 function hlPaths(targets){let s='';for(const t of targets){
-  if(t.n===25){s+=`<circle r="${t.m===2?RB.bi:RB.bo}" fill="#e1ae4a" fill-opacity=".45" stroke="#e1ae4a" stroke-width="2"/>`;continue}
+  if(t.n===25){s+=`<circle r="${t.m===2?RB.bi:RB.bo}" fill="#f25a2c" fill-opacity=".45" stroke="#f25a2c" stroke-width="2"/>`;continue}
   const i=SECT.indexOf(t.n);if(i<0)continue;const c=90-i*18;
   const [r1,r2]=t.m===3?[RB.ti,RB.to]:t.m===2?[RB.di,RB.do]:t.m===1?[RB.to,RB.di]:[RB.bo,RB.do];
-  s+=`<path d="${ring(r1,r2,c-9,c+9)}" fill="#e1ae4a" fill-opacity="${t.m?'.55':'.28'}" stroke="#e1ae4a" stroke-width="2"/>`;}return s}
+  s+=`<path d="${ring(r1,r2,c-9,c+9)}" fill="#f25a2c" fill-opacity="${t.m?'.55':'.28'}" stroke="#f25a2c" stroke-width="2"/>`;}return s}
 function svgToMM(svg,e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const p=pt.matrixTransform(svg.getScreenCTM().inverse());return [p.x,-p.y]}
 
 // ---------- Spelen ----------
@@ -886,10 +1053,11 @@ function renderSetup(){
    <div class="stack">
     <div class="box stack"><h3>${G.name}: instellingen</h3>
       <div class="opts">${G.opts.length?G.opts.map(o=>{const cur=(L.opts[L.game]||{})[o.k]??o.d;return `<label class="f">${o.l}<select data-o="${o.k}">${o.v.map(v=>{const [val,t]=Array.isArray(v)?v:[v,v];return `<option value="${val}" ${String(val)===String(cur)?'selected':''}>${t}</option>`}).join('')}</select></label>`}).join(''):'<span class="muted small">Geen instellingen nodig.</span>'}</div></div>
-    <div class="box stack"><h3>Spelers</h3>
+    <div class="box stack"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Spelers</h3><span class="small muted">${rosterCount()} / 4</span></div>
       <datalist id="pnames">${names}</datalist>
-      <div class="opts"><label class="f">Speler 1<input type="text" id="p1" list="pnames" value="${esc(L.p1||'')}" placeholder="Naam"></label>
-      <label class="f">Speler 2 ${G.min>1?'':'<span>(leeg = solo)</span>'}<input type="text" id="p2" list="pnames" value="${esc(L.p2||'')}" placeholder="${G.min>1?'Verplicht bij dit spel':'Solo'}"></label></div></div>
+      ${ONLINE.open?'':`<div class="seg" id="teamseg"><button data-t="0" class="${L.teams?'':'on'}">Losse spelers</button><button data-t="1" class="${L.teams?'on':''}">Teams van 2</button></div>`}
+      <div class="roster" id="roster">${rosterHTML()}</div>
+      ${ONLINE.open?`<div class="small muted">Online: ${esc(ONLINE.guestName)} speelt automatisch mee als speler 2.</div>`:`<div class="row"><button class="btn" id="addp">+ Speler</button><button class="btn" id="addbot">+ DartBot</button></div>`}</div>
     <div class="box stack" id="onlinebox"><h3>Online tegen een maat</h3>${onlineSetupHTML()}</div>
     <div class="box stack"><h3>Invoer</h3>
       <div class="seg" id="inmode"><button data-m="manual" class="${L.input!=='cam'?'on':''}">Handmatig</button><button data-m="cam" class="${L.input==='cam'?'on':''}">Camera's</button></div>
@@ -901,23 +1069,27 @@ function renderSetup(){
   $$('[data-o]').forEach(s=>s.onchange=()=>{(L.opts[L.game]=L.opts[L.game]||{})[s.dataset.o]=s.value;save()});
   $$('#inmode button').forEach(b=>b.onclick=()=>{L.input=b.dataset.m;save();renderSetup()});
   $('#voice').onchange=e=>{DB.set.voice=e.target.checked;save()};
-  bindOnlineSetup();
+  bindOnlineSetup();bindRoster();
   $('#startbtn').onclick=()=>{
-    const n1=$('#p1').value.trim();let n2=$('#p2').value.trim();
-    if(ONLINE.conn&&ONLINE.open){n2=ONLINE.guestName;}
-    if(!n1){toast('Vul de naam van speler 1 in');return}
-    if(G.min>1&&!n2){toast(G.name+' speel je met z\'n tweeën');return}
-    if(n2&&n1.toLowerCase()===n2.toLowerCase()){toast('Kies twee verschillende spelers');return}
-    L.p1=n1;L.p2=n2;save();
-    const pl=[playerByName(n1)];if(n2)pl.push(playerByName(n2));
-    ONLINE.guestId=ONLINE.open?pl[1].id:null;
+    readRoster();const R=L.roster;
+    let parts=[];const seen=new Set();let botN=0;
+    for(const r of R.slice(0,4)){if(r.type==='bot'){botN++;parts.push({id:'bot'+r.level+'-'+botN,name:'DartBot '+r.level,bot:+r.level})}
+      else{const n=(r.name||'').trim();if(!n)continue;if(seen.has(n.toLowerCase())){toast(n+' staat er twee keer in');return}seen.add(n.toLowerCase());parts.push(playerByName(n))}}
+    if(ONLINE.conn&&ONLINE.open){parts=parts.filter(p=>!p.bot).slice(0,1);if(!parts.length){toast('Vul je eigen naam in');return}parts.push(playerByName(ONLINE.guestName))}
+    if(!parts.length){toast('Vul minstens één naam in');return}
+    let pl=parts;
+    if(L.teams&&!ONLINE.open){if(parts.length!==4){toast('Teams van 2: voeg 4 spelers toe');return}
+      pl=[];for(let k=0;k<parts.length;k+=2){const a=parts[k],b=parts[k+1];pl.push({id:'team:'+a.id+'+'+b.id,name:a.name+' & '+b.name,members:[a,b]})}}
+    if(pl.length<(G.min||1)){toast(G.name+' speel je met minstens '+G.min+' spelers of teams');return}
+    L.p1=(R.find(r=>r.type!=='bot')||{}).name||L.p1;save();
+    ONLINE.guestId=ONLINE.open?pl[pl.length-1].id:null;
     const opts={};G.opts.forEach(o=>opts[o.k]=(L.opts[L.game]||{})[o.k]??o.d);
-    startMatch(L.game,pl,opts,L.input);
+    chooseStarter(pl,ordered=>startMatch(L.game,ordered,opts,L.input));
   };
 }
 function startMatch(game,pl,opts,input){
   opts=Object.assign({},opts,{seed:Math.floor(Math.random()*1e9)});
-  MATCH={id:uid(),game,opts,players:pl.map(p=>({id:p.id,name:p.name})),turns:[],input,saved:false,date:new Date().toISOString(),online:!!(ONLINE.open&&ONLINE.guestId&&pl.some(p=>p.id===ONLINE.guestId))};
+  MATCH={id:uid(),game,opts,players:pl.map(p=>Object.assign({id:p.id,name:p.name},p.bot?{bot:p.bot}:{},p.members?{members:p.members.map(m=>Object.assign({id:m.id,name:m.name},m.bot?{bot:m.bot}:{}))}:{})),turns:[],input,saved:false,date:new Date().toISOString(),online:!!(ONLINE.open&&ONLINE.guestId&&pl.some(p=>p.id===ONLINE.guestId))};
   ST=runMatch(MATCH);MULT=1;
   if(input==='cam'){startAllCams().then(async()=>{if(!activeCams().length&&CAMRT.some(r=>r.stream)){toast('Camera\'s kalibreren…');await autoCalAll()}resetRefs();DET.active=true;renderGame()});}
   renderGame();
@@ -925,6 +1097,7 @@ function startMatch(game,pl,opts,input){
 function curTurn(){return MATCH.turns[MATCH.turns.length-1]}
 function addDart(d){
   if(!MATCH||MATCH.saved||ST.over)return;
+  if(isBotTurn()&&d.src!=='bot')return;
   let t=curTurn();
   if(!t||t.closed){t={darts:[],closed:false};MATCH.turns.push(t)}
   else if(ST.done){t.closed=true;afterClose();t={darts:[],closed:false};MATCH.turns.push(t)}
@@ -932,8 +1105,8 @@ function addDart(d){
   if(ST.msg==='Bust'){say('Bust');callout('Bust','bust')}
   else if(ST.msg&&ST.msg!=='Game shot')callout(ST.msg,'high');
 }
-function nextTurn(){
-  if(!MATCH||ST.over)return;const t=curTurn();if(!t||t.closed||!t.darts.length)return;
+function nextTurn(fromBot){
+  if(!MATCH||ST.over)return;if(isBotTurn()&&!fromBot)return;const t=curTurn();if(!t||t.closed||!t.darts.length)return;
   while(!ST.done&&t.darts.length<3){t.darts.push({n:0,m:0});ST=runMatch(MATCH)}
   t.closed=true;afterClose();refresh();
 }
@@ -942,7 +1115,7 @@ function afterClose(){
   const before=ST; fxTurn(before); if(MATCH.game==='x01'&&!before.bust){if(before.leg)say('Game shot');else say(String(before.sc));}
 }
 function undo(){
-  if(!MATCH||MATCH.saved)return;let t=curTurn();
+  if(!MATCH||MATCH.saved)return;if(isBotTurn()){toast('De DartBot gooit nu');return}let t=curTurn();
   if(t&&!t.darts.length){MATCH.turns.pop();t=curTurn()}
   if(!t)return;t.closed=false;t.darts.pop();if(!t.darts.length)MATCH.turns.pop();
   refresh();
@@ -987,7 +1160,7 @@ function renderGame(){
   updateGame(G);
 }
 function matchChips(G){const o=MATCH.opts||{};const c=[G.name];
-  if(MATCH.game==='x01'){c[0]=String(o.start);if(+o.legs>1)c.push('Eerste tot '+o.legs+' legs');c.push(({straight:'SI',double:'DI',master:'MI'})[o.in]+'-'+({double:'DO',master:'MO',straight:'SO'})[o.out])}
+  if(MATCH.game==='x01'){c[0]=String(o.start);{const n=o.count!=null?+o.count:+o.legs||1;const u=(o.unit||'legs')==='sets'?'sets':'legs';if(n>1||u==='sets')c.push((o.fmt==='best'?'Best of ':'First to ')+n+' '+u)}c.push(({straight:'SI',double:'DI',master:'MI'})[o.in]+'-'+({double:'DO',master:'MO',straight:'SO'})[o.out])}
   else G.opts.forEach(x=>{const v=o[x.k];const e=x.v.find(y=>String(Array.isArray(y)?y[0]:y)===String(v));if(e!=null)c.push(x.l+': '+(Array.isArray(e)?e[1]:e))});
   return c}
 function buildGame(G){
@@ -1004,17 +1177,18 @@ function buildGame(G){
       <div class="turnbar"><div class="tb-darts" id="tbd">${[0,1,2].map(()=>'<div class="tbs"></div>').join('')}</div><div class="tb-sum num" id="tbsum">0</div></div>
       <div class="mright"><button class="ib" id="fs" title="Volledig scherm">⛶</button><button class="ib" id="tostats2" title="Statistieken">▮▮▮</button><button class="ib" id="tocams" title="Camera's en kalibratie">⚙</button></div>
     </div>
-    <div class="mrow">
-      ${card(0)}
+    <div class="mrow ${MATCH.players.length>2?'many':''}">
+      ${MATCH.players.length>2?`<div class="plist">${MATCH.players.map((_,i)=>card(i)).join('')}</div>`:card(0)}
       <div class="mcenter"><div class="camst"><button class="cambtn" id="camtoggle"></button><span class="dstate" id="dstate"></span></div>
         <div class="route" id="route"></div>
         <div class="boardwrap glow">${boardSVG('gboard')}<div class="callout" id="callout"></div></div></div>
-      ${two?card(1):`<div class="pc-side" id="gpanelwrap"></div>`}
+      ${MATCH.players.length===2?card(1):`<div class="pc-side" id="gpanelwrap"></div>`}
     </div>
     <div id="gpanel"></div>
     <div class="selfcam" id="selfcam" hidden><video id="selfv" autoplay playsinline muted></video><span>Jij</span><button class="ib" id="selfx" title="Verbergen">×</button></div>
     <details class="drawer" id="drawer" ${MATCH.input==='cam'?'':'open'}><summary>Handmatig invoeren</summary>
       <div class="pad">
+        ${['x01','countup'].includes(MATCH.game)?'<div class="seg" id="entryseg"><button data-v="dart" class="on">Per pijl</button><button data-v="total">Beurttotaal</button></div><div class="totpad" id="totpad" hidden><div class="totdisp num" id="totdisp">0</div><div class="tkeys" id="tkeys">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button data-k="'+n+'">'+n+'</button>').join('')+'<button data-k="c">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div></div>':''}
         <div class="mult" id="mult"><button data-m="1">Single</button><button data-m="2">Double</button><button data-m="3">Triple</button></div>
         <div class="keys" id="keys">${Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')}<button data-n="25">25</button><button data-n="50">Bull</button><button data-n="0" class="wide">Miss</button><button data-n="-1" title="Laatste pijl ongedaan maken">↶</button></div>
         <div class="ctrl"><button class="btn" id="undo">Ongedaan maken</button><button class="btn primary" id="next">Volgende beurt</button></div>
@@ -1027,8 +1201,12 @@ function buildGame(G){
   $('#keys').onclick=e=>{const b=e.target.closest('button');if(!b)return;let n=+b.dataset.n;if(n===-1){undo();return}
     let d;if(n===0)d={n:0,m:0};else if(n===50)d={n:25,m:2};else if(n===25)d={n:25,m:MULT===1?1:2};else d={n,m:MULT};
     const [x,y]=segPoint(d.n,d.m);d.x=x;d.y=y;d.src='pad';MULT=1;paintMult();addDart(d)};
-  $('#undo').onclick=undo;$('#next').onclick=nextTurn;
-  $('#quit').onclick=()=>confirmBox('Spel afsluiten? Een onafgemaakt spel wordt niet opgeslagen.','Afsluiten',()=>{MATCH=null;GDOM=null;DET.active=false;renderSetup()});
+  $('#undo').onclick=undo;$('#next').onclick=()=>nextTurn();
+  const es=$('#entryseg');if(es){const setMode=v=>{DB.set.entry=v;save();$$('#entryseg button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));$('#totpad').hidden=v!=='total';$('#mult').hidden=v==='total';$('#keys').hidden=v==='total'};
+    es.onclick=e=>{const b=e.target.closest('button');if(b)setMode(b.dataset.v)};setMode(DB.set.entry==='total'?'total':'dart');
+    let tv='';const td=$('#totdisp');$('#tkeys').onclick=e=>{const b=e.target.closest('button');if(!b)return;const k=b.dataset.k;
+      if(k==='c')tv=tv.slice(0,-1);else if(k==='ok'){submitTotal(+(tv||0));tv=''}else if(tv.length<3)tv=(tv+k).replace(/^0+(\d)/,'$1');td.textContent=tv||'0'}}
+  $('#quit').onclick=()=>confirmBox('Spel afsluiten? Een onafgemaakt spel wordt niet opgeslagen.','Afsluiten',()=>{botStop();MATCH=null;GDOM=null;DET.active=false;renderSetup()});
   $('#tocams').onclick=()=>show('cams');$('#tostats2').onclick=()=>show('stats');
   $('#fs').onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){toast('Volledig scherm lukt hier niet')}};
   $('#sfx').onchange=e=>{DB.set.sfx=e.target.checked;save()};
@@ -1052,7 +1230,7 @@ function updateGame(G){
   const cards=$$('#groot .pc');const x01=MATCH.game==='x01';
   ST.players.forEach((p,i)=>{const c=cards[i];if(!c)return;const on=i===ST.cur&&!ST.over;
     c.classList.toggle('on',on);c.classList.toggle('out',!!p.out);
-    $('.tag',c).textContent=ST.winner===i?'Winnaar':p.elim?'Uit':p.out?'Klaar':'';
+    const mp=MATCH.players[i];$('.tag',c).textContent=ST.winner===i?'Winnaar':p.elim?'Uit':p.out?'Klaar':mp.members?'gooit: '+actor(i).name:mp.bot?'niveau '+mp.bot:'';
     tween($('.big',c),G.big(ST,i));
     const legs=$('.legs',c);legs.textContent=x01?p.legs:'';legs.hidden=!x01;
     const s=ST.stat[i];
@@ -1080,11 +1258,11 @@ function updateGame(G){
   else if(ST.done)r.innerHTML=`<span class="rtext">${MATCH.input==='cam'?'Pijlen eruit halen':'Volgende beurt'}</span>`;
   else{const h=G.sugg?'':(G.hint(ST)||'');r.innerHTML=h?`<span class="rtext">${esc(h)}</span>`:''}
   const svg=$('#gboard');$('.hl',svg).innerHTML=ST.over||ST.done?'':hlPaths(G.targets(ST));
-  $('.marks',svg).innerHTML=ST.tdarts.map((d,k)=>d.m||d.x!=null?`<g><circle cx="${d.x??0}" cy="${-(d.y??0)}" r="7" fill="#e1ae4a" stroke="#101311" stroke-width="2.5"/><text x="${d.x??0}" y="${-(d.y??0)}" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#101311">${k+1}</text></g>`:'').join('');
+  $('.marks',svg).innerHTML=ST.tdarts.map((d,k)=>d.m||d.x!=null?`<g><circle cx="${d.x??0}" cy="${-(d.y??0)}" r="7" fill="#f25a2c" stroke="#fff" stroke-width="2.5"/><text x="${d.x??0}" y="${-(d.y??0)}" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#fff">${k+1}</text></g>`:'').join('');
   const nb=$('#next');nb.disabled=!curTurn()||curTurn().closed||!curTurn().darts.length||ST.over;nb.classList.toggle('ready',ST.done&&!ST.over);
   const ct=$('#camtoggle'),k=activeCams().length;ct.innerHTML=`<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h3l2-2h6l2 2h3v12H4z" fill="currentColor"/><circle cx="12" cy="13" r="3.5" fill="var(--bg)"/></svg> ${MATCH.input==='cam'?k:'uit'}`;
   ct.classList.toggle('on',MATCH.input==='cam');ct.title=MATCH.input==='cam'?'Camera\'s tellen mee. Klik om uit te zetten.':'Klik om automatisch te laten tellen';
-  buildThumbs();onlineGameUI();onlineSync();if(!GDOM.selfHidden)showSelf();
+  buildThumbs();onlineGameUI();onlineSync();if(!GDOM.selfHidden)showSelf();botTick();
 }
 function checkoutSugg(st){const p=st.players[st.cur];return checkout(p.rem,Math.min(3-st.td,9-p.used),'double')}
 // effecten
@@ -1234,7 +1412,7 @@ function resetRefs(){DET.armT=performance.now()+1500;CAMRT.forEach(rt=>{rt.ref=n
 function activeCams(){return CAMRT.map((rt,i)=>i).filter(i=>CAMRT[i].stream&&CAMRT[i].H&&DB.cams[i].use!==false)}
 
 function tick(){
-  const on=DET.active||DET.test;const ids=activeCams();
+  const on=DET.active||DET.test||BULL.active;const ids=activeCams();
   if(!on||!ids.length){DET.info=on?'Geen gekalibreerde camera actief':'';updateDetState();return}
   const thr=DB.set.thr;let any=0;
   for(const i of ids){const rt=CAMRT[i];if(!grab(i)){rt.chg=0;rt.mot=0;continue}
@@ -1308,9 +1486,10 @@ function detectDart(ids){if(need20()){fix20(ids);return}
   const [x,y]=mm;if(Math.hypot(x,y)>235)return;
   const s=scoreAt(x,y);const d={n:s.n,m:s.m,x,y,src:'cam'};DET.info='Pijl gezien: '+lbl(d);
   if(DET.test&&VIEW==='cams'){DET.testHits.push(d);if(DET.testHits.length>3)DET.testHits.shift();paintTest()}
-  if(DET.active&&MATCH&&!MATCH.saved){if(ST.done||isGuestTurn())return;addDart(d)}
+  if(BULL.active){bullDart(d);return}
+  if(DET.active&&MATCH&&!MATCH.saved){if(ST.done||isGuestTurn()||isBotTurn())return;addDart(d)}
 }
-function onTakeout(){if(isGuestTurn())return;
+function onTakeout(){if(isGuestTurn()||isBotTurn())return;
   if(DET.test){DET.testHits=[];paintTest()}
   if(DET.active&&MATCH&&!MATCH.saved){const t=curTurn();if(t&&!t.closed&&t.darts.length)nextTurn()}
 }
@@ -1325,17 +1504,17 @@ function drawCam(i,cv,big){
   if(!v||v.readyState<2||!v.videoWidth){ctx.fillStyle='#000';ctx.fillRect(0,0,cv.width,cv.height);ctx.fillStyle='#a5a08c';ctx.font='16px sans-serif';ctx.textAlign='center';ctx.fillText(rt.err||'Camera niet gestart',cv.width/2,cv.height/2);return}
   const [sx,sy,sw,sh]=cropRect(i,v);const W=big?960:320,H=Math.round(W*sh/sw);if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H}
   ctx.drawImage(v,sx,sy,sw,sh,0,0,W,H);
-  if(rt.Hinv){ctx.strokeStyle='rgba(225,174,74,.9)';ctx.lineWidth=big?1.5:1;
+  if(rt.Hinv){ctx.strokeStyle='rgba(242,90,44,.9)';ctx.lineWidth=big?1.5:1;
     const pt=(X,Y)=>{const p=applyH(rt.Hinv,X,Y);return [p[0]*W,p[1]*H]};
     for(const r of [RB.bi,RB.bo,RB.ti,RB.to,RB.di,RB.do]){ctx.beginPath();for(let k=0;k<=72;k++){const a=k*5*Math.PI/180,[x,y]=pt(r*Math.cos(a),r*Math.sin(a));k?ctx.lineTo(x,y):ctx.moveTo(x,y)}ctx.stroke()}
     for(let s=0;s<20;s++){const a=(90-s*18+9)*Math.PI/180;const [x1,y1]=pt(RB.bo*Math.cos(a),RB.bo*Math.sin(a)),[x2,y2]=pt(RB.do*Math.cos(a),RB.do*Math.sin(a));ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
     if(big){ctx.font='bold 20px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.lineWidth=4;ctx.strokeStyle='#000';
-      SECT.forEach((n,k)=>{const a=(90-k*18)*Math.PI/180;const [x,y]=pt(190*Math.cos(a),190*Math.sin(a));ctx.fillStyle=n===20?'#4fe3ff':'#e1ae4a';ctx.strokeText(n,x,y);ctx.fillText(n,x,y)})}}
-  if(big){(CALIB.i===i?CALIB.pts:(DB.cams[i].pts||[])).forEach((p,k)=>{ctx.fillStyle='#e1ae4a';ctx.strokeStyle='#101311';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p[0]*W,p[1]*H,7,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='left';ctx.fillText(CAL[k].lab,p[0]*W+10,p[1]*H-8)})}
+      SECT.forEach((n,k)=>{const a=(90-k*18)*Math.PI/180;const [x,y]=pt(190*Math.cos(a),190*Math.sin(a));ctx.fillStyle=n===20?'#4fe3ff':'#f25a2c';ctx.strokeText(n,x,y);ctx.fillText(n,x,y)})}}
+  if(big){(CALIB.i===i?CALIB.pts:(DB.cams[i].pts||[])).forEach((p,k)=>{ctx.fillStyle='#f25a2c';ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p[0]*W,p[1]*H,7,0,7);ctx.fill();ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 14px sans-serif';ctx.textAlign='left';ctx.fillText(CAL[k].lab,p[0]*W+10,p[1]*H-8)})}
   if(rt.lastCands&&big){rt.lastCands.forEach(c=>{ctx.strokeStyle='rgba(255,255,255,.6)';ctx.beginPath();ctx.arc(c.px[0]/rt.PW*W,c.px[1]/rt.PH*H,6,0,7);ctx.stroke()})}
   if(rt.last){ctx.strokeStyle='#ff5a4a';ctx.lineWidth=2;const x=rt.last[0]/rt.PW*W,y=rt.last[1]/rt.PH*H;ctx.beginPath();ctx.moveTo(x-10,y);ctx.lineTo(x+10,y);ctx.moveTo(x,y-10);ctx.lineTo(x,y+10);ctx.stroke()}
   if(big&&CALIB.i===i&&CALIB.hover){const [hx,hy]=CALIB.hover;const Z=3,S=150;const zx=hx*W,zy=hy*H;ctx.save();ctx.fillStyle='#000';ctx.fillRect(8,8,S+4,S+4);
-    ctx.drawImage(v,sx+(zx-S/(2*Z))*sw/W,sy+(zy-S/(2*Z))*sh/H,S/Z*sw/W,S/Z*sh/H,10,10,S,S);ctx.strokeStyle='#e1ae4a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(10+S/2,10);ctx.lineTo(10+S/2,10+S);ctx.moveTo(10,10+S/2);ctx.lineTo(10+S,10+S/2);ctx.stroke();ctx.restore()}
+    ctx.drawImage(v,sx+(zx-S/(2*Z))*sw/W,sy+(zy-S/(2*Z))*sh/H,S/Z*sw/W,S/Z*sh/H,10,10,S,S);ctx.strokeStyle='#f25a2c';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(10+S/2,10);ctx.lineTo(10+S/2,10+S);ctx.moveTo(10,10+S/2);ctx.lineTo(10+S,10+S/2);ctx.stroke();ctx.restore()}
 }
 function buildThumbs(){const t=$('#thumbs');if(!t)return;if(t.children.length!==3)t.innerHTML=[0,1,2].map(i=>`<canvas data-i="${i}" width="320" height="240" title="Camera ${i+1}"></canvas>`).join('')}
 function raf(){
@@ -1558,7 +1737,7 @@ async function autoCalAll(only){
   return okN;
 }
 function calText(){const k=CALIB.pts.length;return k<4?`Punt ${k+1} van 4: klik op de draadkruising aan de <b>buitenrand van de dubbelring</b> tussen <b>${CAL[k].lab}</b>. De loep linksboven helpt bij precies klikken.`:''}
-function paintTest(){const svg=$('#tboard');if(!svg)return;$('.marks',svg).innerHTML=DET.testHits.map((d,k)=>`<circle cx="${d.x}" cy="${-d.y}" r="8" fill="#e1ae4a" stroke="#101311" stroke-width="2.5"/>`).join('');
+function paintTest(){const svg=$('#tboard');if(!svg)return;$('.marks',svg).innerHTML=DET.testHits.map((d,k)=>`<circle cx="${d.x}" cy="${-d.y}" r="8" fill="#f25a2c" stroke="#fff" stroke-width="2.5"/>`).join('');
   const t=$('#testinfo');if(t&&DET.testHits.length)t.textContent='Laatste: '+DET.testHits.map(lbl).join(' · ')}
 
 // ---------- Statistieken ----------
@@ -1606,7 +1785,7 @@ function renderStats(){
   $$('[data-del]').forEach(b=>b.onclick=()=>confirmBox('Deze pot verwijderen uit de statistieken?','Verwijderen',()=>{DB.matches=DB.matches.filter(m=>m.id!==b.dataset.del);save();renderStats()}));
   // heatmap
   const hs=[];ms.forEach(m=>{const k=idx(m);(m.hits||[]).forEach(h=>{if(h[0]===k&&h[2])hs.push(h)})});
-  const recent=hs.slice(-800);$('#hboard .marks').innerHTML=recent.map(h=>`<circle cx="${h[3]+(Math.random()-.5)*4}" cy="${-h[4]+(Math.random()-.5)*4}" r="3.2" fill="#e1ae4a" fill-opacity=".45"/>`).join('');
+  const recent=hs.slice(-800);$('#hboard .marks').innerHTML=recent.map(h=>`<circle cx="${h[3]+(Math.random()-.5)*4}" cy="${-h[4]+(Math.random()-.5)*4}" r="3.2" fill="#f25a2c" fill-opacity=".45"/>`).join('');
   const cnt={};hs.forEach(h=>{const l=lbl({n:h[1],m:h[2]});cnt[l]=(cnt[l]||0)+1});
   const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,6);
   $('#topsegs').textContent=hs.length?'Meest geraakt: '+top.map(([l,c])=>l+' ('+Math.round(c/hs.length*100)+'%)').join(' · '):'Nog geen pijlen met een plek op het bord.';
@@ -1615,10 +1794,10 @@ function avgChart(vals){
   if(vals.length<2)return '<div class="small muted">De grafiek verschijnt vanaf twee X01-potten.</div>';
   const W=640,H=200,pl=36,pr=12,pt=12,pb=26;const lo=Math.floor(Math.min(...vals)/10)*10,hi=Math.max(lo+10,Math.ceil(Math.max(...vals)/10)*10);
   const X=i=>pl+i*(W-pl-pr)/(vals.length-1),Y=v=>pt+(hi-v)*(H-pt-pb)/(hi-lo);
-  const step=(hi-lo)>60?20:10;let g='';for(let v=lo;v<=hi;v+=step)g+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#2c342e"/><text x="${pl-6}" y="${Y(v)}" fill="#a5a08c" font-size="11" text-anchor="end" dominant-baseline="central">${v}</text>`;
+  const step=(hi-lo)>60?20:10;let g='';for(let v=lo;v<=hi;v+=step)g+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="#d3e2de"/><text x="${pl-6}" y="${Y(v)}" fill="#5d6f6a" font-size="11" text-anchor="end" dominant-baseline="central">${v}</text>`;
   const d=vals.map((v,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1)).join('');
   const area=d+`L${X(vals.length-1)} ${H-pb}L${X(0)} ${H-pb}Z`;const L=vals.length-1;
-  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="3-pijl gemiddelde per X01-pot">${g}<path d="${area}" fill="#e1ae4a" fill-opacity=".12"/><path d="${d}" fill="none" stroke="#e1ae4a" stroke-width="2.2"/><circle cx="${X(L)}" cy="${Y(vals[L])}" r="4.5" fill="#e1ae4a"/><text x="${X(L)-8}" y="${Y(vals[L])-12}" fill="#efe8d6" font-size="12" font-weight="700" text-anchor="end">${vals[L].toFixed(1)}</text><text x="${pl}" y="${H-6}" fill="#a5a08c" font-size="11">Gemiddelde per pot, laatste ${vals.length}</text></svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="3-pijl gemiddelde per X01-pot">${g}<path d="${area}" fill="#f25a2c" fill-opacity=".12"/><path d="${d}" fill="none" stroke="#f25a2c" stroke-width="2.2"/><circle cx="${X(L)}" cy="${Y(vals[L])}" r="4.5" fill="#f25a2c"/><text x="${X(L)-8}" y="${Y(vals[L])-12}" fill="#13201c" font-size="12" font-weight="700" text-anchor="end">${vals[L].toFixed(1)}</text><text x="${pl}" y="${H-6}" fill="#5d6f6a" font-size="11">Gemiddelde per pot, laatste ${vals.length}</text></svg>`;
 }
 
 // ---------- Spelers ----------
