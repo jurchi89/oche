@@ -81,11 +81,11 @@ body.ingame:not(.mine) .pc .big{font-size:40px}
 </style>
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 01:45</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 01:55</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
-    <div>Speel mee met je maat. Zet je telefoon in de standaard met de camera op je bord. Jij tikt je scores in, hij ziet je bord live.</div>
+    <div>Speel mee met je maat. Zet je telefoon in de standaard met de camera op je bord. Jij tikt je scores in, hij ziet je bord live.</div><div class="small muted">Tip: laat deze pagina open en op de voorgrond, en zet je telefoon aan de oplader. Valt de verbinding weg, dan verbindt hij vanzelf opnieuw.</div>
     <label class="f">Code van je maat<input type="text" id="code" maxlength="6" autocomplete="off" autocapitalize="characters" placeholder="ABC123"></label>
     <label class="f">Jouw naam<input type="text" id="name" maxlength="24" autocomplete="nickname" placeholder="Naam"></label>
     <label class="small muted" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="usecam" checked> Mijn camera delen (achtercamera op het bord)</label>
@@ -144,26 +144,39 @@ $('#go').onclick=async()=>{
     catch(e){toast('Camera niet beschikbaar: '+(e.name==='NotAllowedError'?'geef toestemming in je browser':e.message));local=null}}
   connect(c);
 };
-function connect(c){
+let CODE='',lastSeen=0,retry=0,retryT=null,everOpen=false;
+function connect(c){CODE=c;
   peer=new Peer({debug:1});
   peer.on('call',call=>{call.answer();call.on('stream',st=>{const face=call.metadata&&call.metadata.kind==='face';const v=face?$('#facev'):$('#hostv');v.srcObject=st;v.play().catch(()=>{});if(face){$('#face').hidden=false;document.body.classList.add('hasface')}})});
-  peer.on('open',()=>{
-    conn=peer.connect('oche-dart-'+c,{reliable:true});
-    const to=setTimeout(()=>{if(!conn.open){$('#jmsg').textContent='Geen verbinding. Klopt de code, en staat Oche bij je maat nog open?';$('#go').disabled=false;chip('bad','Niet verbonden')}},12000);
-    conn.on('open',()=>{clearTimeout(to);conn.send({t:'hello',name:myName});chip('ok','Verbonden');$('#join').hidden=true;$('#play').hidden=false;
-      if(local)peer.call('oche-dart-'+c,local);
-      try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>wake=w).catch(()=>{})}catch(e){}});
-    conn.on('data',onMsg);
-    conn.on('close',()=>{chip('bad','Verbinding weg');$('#status').textContent='Verbinding verbroken. Ververs de pagina om opnieuw te verbinden.';$('#pad').classList.add('locked')});
-  });
-  peer.on('error',e=>{chip('bad','Fout');$('#go').disabled=false;
-    $('#jmsg').textContent=e.type==='peer-unavailable'?'Deze code bestaat niet (meer). Vraag je maat om de code in zijn Oche-app.':e.type==='network'||e.type==='server-error'?'Geen verbinding met de koppeldienst. Controleer je internet.':'Fout: '+(e.message||e.type)});
+  peer.on('open',()=>openConn());
+  peer.on('disconnected',()=>{try{peer.reconnect()}catch(e){}});
+  peer.on('error',e=>{
+    if(!everOpen){chip('bad','Fout');$('#go').disabled=false;
+      $('#jmsg').textContent=e.type==='peer-unavailable'?'Deze code bestaat niet (meer). Vraag je maat om de code in zijn Oche-app.':e.type==='network'||e.type==='server-error'?'Geen verbinding met de koppeldienst. Controleer je internet.':'Fout: '+(e.message||e.type);return}
+    scheduleRetry()});
 }
+function openConn(){
+  if(conn){try{conn.close()}catch(e){}}
+  conn=peer.connect('oche-dart-'+CODE,{reliable:true});const my=conn;
+  const to=setTimeout(()=>{if(my.open)return;if(!everOpen){$('#jmsg').textContent='Geen verbinding. Klopt de code, en staat Oche bij je maat nog open?';$('#go').disabled=false;chip('bad','Niet verbonden')}else scheduleRetry()},12000);
+  my.on('open',()=>{clearTimeout(to);everOpen=true;retry=0;lastSeen=Date.now();my.send({t:'hello',name:myName});chip('ok','Verbonden');$('#join').hidden=true;$('#play').hidden=false;
+    if(local)peer.call('oche-dart-'+CODE,local);keepAwake()});
+  my.on('data',m=>{lastSeen=Date.now();onMsg(m)});
+  my.on('close',()=>{if(my===conn)scheduleRetry()});
+  my.on('error',()=>{if(my===conn)scheduleRetry()});
+}
+function scheduleRetry(){if(retryT)return;chip('bad','Opnieuw verbinden…');$('#pad').classList.add('locked');
+  const wait=Math.min(8000,1000*Math.pow(1.6,retry++));
+  retryT=setTimeout(()=>{retryT=null;if(!peer||peer.destroyed){connect(CODE);return}if(peer.disconnected){try{peer.reconnect()}catch(e){}setTimeout(openConn,800)}else openConn()},wait)}
+// hartslag: blijft het stil, dan opnieuw verbinden
+setInterval(()=>{if(!everOpen||retryT)return;if(conn&&conn.open){try{conn.send({t:'ping'})}catch(e){}}if(Date.now()-lastSeen>15000)scheduleRetry()},4000);
+function keepAwake(){try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>{wake=w;w.addEventListener&&w.addEventListener('release',()=>{wake=null})}).catch(()=>{})}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!everOpen)return;keepAwake();if(!conn||!conn.open||Date.now()-lastSeen>8000)scheduleRetry()});
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&conn&&conn.open&&navigator.wakeLock)navigator.wakeLock.request('screen').then(w=>wake=w).catch(()=>{})});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let lastTurnMine=false;
 function onMsg(m){if(!m||typeof m!=='object')return;
+  if(m.t==='ping'||m.t==='pong')return;
   if(m.t==='full'){toast('Er speelt al iemand mee bij je maat');return}
   if(m.t==='bye'){$('#status').textContent='Je maat heeft het online spelen gestopt.';$('#pad').classList.add('locked');return}
   if(m.t!=='state')return;S=m;
