@@ -112,7 +112,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 13:00</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 15:15</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -145,13 +145,16 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 const $=s=>document.querySelector(s);
-const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+// ?demo=1: proefspel vanaf de laptop van de host (nep-maat, geen camera, niets onthouden)
+const DEMO=new URLSearchParams(location.search).has('demo');
+const store={get(k){if(DEMO)return null;try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){if(DEMO)return;try{localStorage.setItem(k,v)}catch(e){}}};
 let peer=null,conn=null,local=null,S=null,MULT=1,wake=null,myName='';
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
 function chip(state,txt){const c=$('#chip');c.className='chip '+state;c.querySelector('span').textContent=txt;const d=$('#dot');if(d){d.className='dot '+state;d.title=txt}}
 const code=(location.hash||'').replace('#','').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
 $('#code').value=code||store.get('oche-gast-code')||'';$('#name').value=store.get('oche-gast-name')||'';
 if(code&&$('#name').value)$('#name').focus();
+if(DEMO&&code){$('#name').value='Testmaat';$('#usecam').checked=false;setTimeout(()=>$('#go').click(),400)}
 try{if(sessionStorage.getItem('oche-upd')&&code&&$('#name').value)setTimeout(()=>$('#go').click(),300)}catch(e){}
 // toetsenbord
 $('#keys').innerHTML=Array.from({length:20},(_,i)=>`<button data-n="${i+1}">${i+1}</button>`).join('')+'<button data-n="25">25</button><button data-n="50">Bull</button><button data-n="0" class="w">Miss</button><button data-n="-1">↶</button>';
@@ -208,7 +211,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
-const GVER='1300';
+const GVER='1515';
 const STR={board:null,face:null};let SWAP=false,ROT=0;
 function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
