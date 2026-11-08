@@ -66,6 +66,10 @@ body.mine #ownbig{display:none!important}
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;gap:6px}
 .vid{position:relative;flex:1;min-height:0;border-radius:12px;overflow:hidden;background:#000}
 .vid video{width:100%;height:100%;object-fit:contain;display:block;transform-origin:50% 50%;transition:transform .3s}
+.vid{touch-action:none}
+#zoomer{width:100%;height:100%;transform-origin:0 0;will-change:transform}
+.zreset{position:absolute;right:8px;top:8px;background:rgba(0,0,0,.65);border:1px solid var(--gold);color:var(--gold);border-radius:8px;padding:4px 10px;font-weight:800;z-index:2}
+.zhint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(0,0,0,.55);font-size:12px;padding:2px 8px;border-radius:6px;color:var(--muted);transition:opacity .6s;pointer-events:none}
 .vid b{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:6px;font-size:12px}
 .vid .big-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
 .route{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
@@ -106,7 +110,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 02:45</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 11:55</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -124,7 +128,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
   <div class="turnrow"><span class="dot" id="dot" title="Verbinding"></span><div class="d" id="tdarts"><div class="s">·</div><div class="s">·</div><div class="s">·</div></div><div class="t" id="tsum">0</div><div class="status" id="status">Wachten op de start…</div><button class="ib" id="swapbtn" title="Wissel groot beeld: bord of laptopcamera" aria-label="Wissel groot beeld" hidden>⇄</button><button class="ib" id="selfbtn" title="Eigen camera tonen" aria-label="Eigen camera tonen">◉</button><button class="ib" id="fsbtn" title="Volledig scherm" aria-label="Volledig scherm">⛶</button></div>
   <div class="stage">
     <div class="vid ownbig" id="ownbig" hidden><video id="ownbigv" autoplay playsinline muted></video><b>Jouw bord: richt je telefoon zo dat het hele bord in beeld is</b></div>
-    <div class="vid" id="vidbox"><video id="hostv" autoplay playsinline muted></video><b id="hostlab">Bord van je maat</b><div id="overmsg"></div></div>
+    <div class="vid" id="vidbox"><div id="zoomer"><video id="hostv" autoplay playsinline muted></video></div><button class="zreset" id="zreset" hidden>1×</button><span class="zhint" id="zhint">Knijp of dubbeltik om in te zoomen</span><b id="hostlab">Bord van je maat</b><div id="overmsg"></div></div>
     <div class="route" id="route"></div>
     <div id="pad" class="locked">
       <div class="mult" id="mult"><button data-m="1" class="on">Single</button><button data-m="2">Double</button><button data-m="3">Triple</button></div>
@@ -202,7 +206,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
-const GVER='0245';
+const GVER='1155';
 const STR={board:null,face:null};let SWAP=false,ROT=0;
 function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
@@ -219,8 +223,27 @@ function placeStreams(){const big=$('#hostv'),small=$('#facev');const hn=($('#fa
   $('#face').hidden=!ss;document.body.classList.toggle('swap',SWAP);
   $('#hostlab').textContent=SWAP?hn:'Bord van '+hn;$('#facelab').textContent=SWAP?'Bord':hn;
   $('#swapbtn').hidden=!STR.face;applyRot()}
-function doSwap(){if(!STR.face){toast('Je maat deelt geen laptopcamera');return}SWAP=!SWAP;placeStreams()}
-$('#face').onclick=doSwap;$('#swapbtn').onclick=doSwap;$('#vidbox').ondblclick=doSwap;
+function doSwap(){if(!STR.face){toast('Je maat deelt geen laptopcamera');return}SWAP=!SWAP;if(typeof zReset==='function')zReset();placeStreams()}
+$('#face').onclick=doSwap;$('#swapbtn').onclick=doSwap;
+// zoomen: knijpen (2 vingers), verschuiven (1 vinger), dubbeltik in/uit, muiswiel op computer
+const Z={z:1,x:0,y:0},PT=new Map();let pinch=null,lastTap=0,lastTapPt=null;
+function zClamp(){const b=$('#vidbox'),W=b.clientWidth,H=b.clientHeight;Z.z=Math.max(1,Math.min(6,Z.z));Z.x=Math.min(0,Math.max(W-W*Z.z,Z.x));Z.y=Math.min(0,Math.max(H-H*Z.z,Z.y))}
+function zApply(){zClamp();$('#zoomer').style.transform=`translate(${Z.x}px,${Z.y}px) scale(${Z.z})`;$('#zreset').hidden=Z.z<1.05;if(Z.z>1.05)$('#zhint').style.opacity=0}
+function zAt(px,py,nz){const cx=(px-Z.x)/Z.z,cy=(py-Z.y)/Z.z;Z.z=nz;Z.x=px-cx*nz;Z.y=py-cy*nz;zApply()}
+function zReset(){Z.z=1;Z.x=0;Z.y=0;zApply()}
+function relPt(e){const r=$('#vidbox').getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+const VB=$('#vidbox');
+VB.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;VB.setPointerCapture(e.pointerId);PT.set(e.pointerId,relPt(e));
+  if(PT.size===2){const [a,b]=[...PT.values()];pinch={d:Math.hypot(a.x-b.x,a.y-b.y),z:Z.z,cx:(Z.x),cy:(Z.y),mx:(a.x+b.x)/2,my:(a.y+b.y)/2}}});
+VB.addEventListener('pointermove',e=>{if(!PT.has(e.pointerId))return;const prev=PT.get(e.pointerId),cur=relPt(e);PT.set(e.pointerId,cur);
+  if(PT.size>=2&&pinch){const [a,b]=[...PT.values()];const d=Math.hypot(a.x-b.x,a.y-b.y),mx=(a.x+b.x)/2,my=(a.y+b.y)/2;
+    const nz=Math.max(1,Math.min(6,pinch.z*d/pinch.d));const cx=(pinch.mx-pinch.cx)/pinch.z,cy=(pinch.my-pinch.cy)/pinch.z;Z.z=nz;Z.x=mx-cx*nz;Z.y=my-cy*nz;zApply()}
+  else if(PT.size===1&&Z.z>1){Z.x+=cur.x-prev.x;Z.y+=cur.y-prev.y;zApply()}});
+function ptrEnd(e){if(!PT.has(e.pointerId))return;const p=PT.get(e.pointerId);PT.delete(e.pointerId);if(PT.size<2)pinch=null;
+  if(e.type==='pointerup'&&PT.size===0){const now=Date.now();if(now-lastTap<320&&lastTapPt&&Math.hypot(p.x-lastTapPt.x,p.y-lastTapPt.y)<40){if(Z.z>1.05)zReset();else zAt(p.x,p.y,2.5);lastTap=0}else{lastTap=now;lastTapPt=p}}}
+VB.addEventListener('pointerup',ptrEnd);VB.addEventListener('pointercancel',ptrEnd);
+VB.addEventListener('wheel',e=>{e.preventDefault();const p=relPt(e);zAt(p.x,p.y,Math.max(1,Math.min(6,Z.z*(e.deltaY<0?1.15:1/1.15))))},{passive:false});
+$('#zreset').onclick=zReset;addEventListener('resize',()=>zApply());setTimeout(()=>{const h=$('#zhint');if(h)h.style.opacity=0},6000);
 function ownViews(idle,mine){const bb=$('#ownbig'),th=$('#ownthumb'),vb=$('#vidbox');if(!local){bb.hidden=true;th.hidden=true;vb.hidden=false;return}
   const bv=$('#ownbigv'),tv=$('#ownv');if(bv.srcObject!==local){bv.srcObject=local;bv.play().catch(()=>{})}if(tv.srcObject!==local){tv.srcObject=local;tv.play().catch(()=>{})}
   bb.hidden=!idle;vb.hidden=idle&&!STR.board?true:false;if(idle){vb.style.flex='0 0 30%'}else vb.style.flex='';
