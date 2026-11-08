@@ -911,7 +911,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1530';
+const APPV='1545';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -924,7 +924,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="front" ${(DB.set.boardView||'front')==='front'?'selected':''}>Recht van voren, 20 boven</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:30</div>
+   <div class="small muted">Versie 8 nov 15:45</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1574,7 +1574,8 @@ async function startCam(i){
   if(!cfg.deviceId){rt.err='Kies eerst een camera';return}
   try{const s=await openStream(cfg.deviceId);rt.stream=s;rt.PW=0;setupCalib(i)}catch(e){rt.err='Camera '+(i+1)+' start niet'+(e&&e.name==='NotReadableError'?' (bezet of te weinig USB-bandbreedte)':e&&e.message?': '+e.message:'')+'. Klik op Start om het opnieuw te proberen.'}
 }
-async function startAllCams(){if(!camSupported())return;for(let i=0;i<3;i++){const c=DB.cams[i];if(c.deviceId&&c.use!==false&&!CAMRT[i].stream)await startCam(i)}updateChip()}
+async function startAllCams(){if(!camSupported())return;
+  {const ids=DB.cams.filter(c=>c.use!==false&&c.deviceId).map(c=>c.deviceId);if(ids.length!==new Set(ids).size&&!startAllCams.busy){startAllCams.busy=true;try{await findCams()}finally{startAllCams.busy=false}return}}for(let i=0;i<3;i++){const c=DB.cams[i];if(c.deviceId&&c.use!==false&&!CAMRT[i].stream)await startCam(i)}updateChip()}
 function stopAll(){Object.keys(STREAMS).forEach(k=>{STREAMS[k].stream.getTracks().forEach(t=>t.stop());delete STREAMS[k]});CAMRT.forEach(r=>{r.stream=null;r.PW=0});updateChip()}
 function cropRect(i,v){const c=(CROPS[DB.cams[i].crop||'full']||CROPS.full)[1];return [c[0]*v.videoWidth,c[1]*v.videoHeight,c[2]*v.videoWidth,c[3]*v.videoHeight]}
 function ensureProc(i){const rt=CAMRT[i],v=rt.stream&&rt.stream.video;if(!v||v.readyState<2||!v.videoWidth)return false;
