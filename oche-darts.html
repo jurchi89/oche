@@ -734,7 +734,7 @@ function onlineSetupHTML(){
    ${link?`<div class="small">Stuur je maat deze link:</div><div class="row"><input type="text" id="glink" readonly value="${esc(link)}" style="flex:1"><button class="btn" id="copylink">Kopiëren</button></div>`:`<div class="small muted">Je maat opent de telefoonpagina en vult de code <b>${ONLINE.code}</b> in.</div>`}
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 01:55</div>
+   <div class="small muted">Versie 8 nov 02:00</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1175,7 +1175,7 @@ function buildMask(i){const rt=CAMRT[i];if(!rt.PW)return;const N=rt.PW*rt.PH;rt.
 function grab(i){const rt=CAMRT[i];if(!ensureProc(i))return false;const v=rt.stream.video;const [sx,sy,sw,sh]=cropRect(i,v);
   rt.pctx.drawImage(v,sx,sy,sw,sh,0,0,rt.PW,rt.PH);const d=rt.pctx.getImageData(0,0,rt.PW,rt.PH).data,g=rt.cur;
   for(let k=0,j=0;k<g.length;k++,j+=4)g[k]=(d[j]*77+d[j+1]*150+d[j+2]*29)>>8;if(!rt.ref){rt.ref=new Uint8Array(g)}return true}
-function resetRefs(){CAMRT.forEach(rt=>{rt.ref=null;rt.last=null});DET.state='wait';DET.settle=0;DET.stable=0}
+function resetRefs(){DET.armT=performance.now()+1500;CAMRT.forEach(rt=>{rt.ref=null;rt.last=null});DET.state='wait';DET.settle=0;DET.stable=0}
 function activeCams(){return CAMRT.map((rt,i)=>i).filter(i=>CAMRT[i].stream&&CAMRT[i].H&&DB.cams[i].use!==false)}
 
 function tick(){
@@ -1187,6 +1187,9 @@ function tick(){
     for(let k=0;k<g.length;k++){if(!m[k])continue;if(Math.abs(g[k]-r[k])>thr)chg++;if(Math.abs(g[k]-p[k])>thr)mot++}
     rt.prev.set(g);rt.chg=chg;rt.mot=mot;any++}
   if(!any)return;
+  // lichtverandering (bv. iemand loopt langs, autobelichting): groot deel van het bord verandert tegelijk zonder pijlvorm -> referentie verversen
+  for(const i of ids){const rt=CAMRT[i];if(rt.maskN&&rt.chg>rt.maskN*.35&&DET.state!=='takeout'){rt.ref.set(rt.cur);rt.chg=0}}
+  if(DET.armT&&performance.now()<DET.armT){ids.forEach(i=>{const rt=CAMRT[i];if(rt.ref&&rt.cur)rt.ref.set(rt.cur)});DET.info='Camera\'s stellen zich in…';updateDetState();return}
   const frac=Math.max(...ids.map(i=>CAMRT[i].maskN?CAMRT[i].chg/CAMRT[i].maskN:0));
   const moving=ids.some(i=>CAMRT[i].mot>DB.set.minPx);
   const dart=ids.some(i=>CAMRT[i].chg>DB.set.minPx);
@@ -1195,7 +1198,7 @@ function tick(){
     DET.info='Hand of pijlen uithalen gezien… wacht tot het stil is';
     if(!moving){DET.stable++;if(DET.stable>=8){resetRefs();DET.info='Wissel';onTakeout()}}else DET.stable=0;
     updateDetState();return}
-  if(dart&&!moving){DET.settle++;if(DET.settle>=2){detectDart(ids);ids.forEach(i=>{const rt=CAMRT[i];rt.ref.set(rt.cur)});DET.settle=0}}
+  if(dart&&!moving){DET.settle++;if(DET.settle>=3){detectDart(ids);ids.forEach(i=>{const rt=CAMRT[i];rt.ref.set(rt.cur)});DET.settle=0}}
   else{DET.settle=0;if(!dart){DET.quiet++;if(DET.quiet>40){ids.forEach(i=>CAMRT[i].ref.set(CAMRT[i].cur));DET.quiet=0}}else DET.quiet=0}
   if(!DET.info||DET.info==='Wissel')DET.info='Wachten op pijl';
   updateDetState();
@@ -1208,6 +1211,9 @@ function tipCands(i){
   const n=xs.length;if(n<DB.set.minPx)return null;
   let mx=0,my=0;for(let k=0;k<n;k++){mx+=xs[k];my+=ys[k]}mx/=n;my/=n;
   let cxx=0,cyy=0,cxy=0;for(let k=0;k<n;k++){const dx=xs[k]-mx,dy=ys[k]-my;cxx+=dx*dx;cyy+=dy*dy;cxy+=dx*dy}
+  {const tr=(cxx+cyy)/n,dt=(cxx*cyy-cxy*cxy)/(n*n),disc=Math.sqrt(Math.max(0,tr*tr/4-dt)),l1=tr/2+disc,l2=Math.max(1e-6,tr/2-disc);
+   if(l1/l2<4){rt.reject='geen pijlvorm';return null}
+   if(n>rt.maskN*.06){rt.reject='te groot (hand of licht)';return null}}
   const th=.5*Math.atan2(2*cxy,cxx-cyy),vx=Math.cos(th),vy=Math.sin(th);
   const t=[];for(let k=0;k<n;k++)t.push((xs[k]-mx)*vx+(ys[k]-my)*vy);t.sort((a,b)=>a-b);
   const t1=t[Math.floor(n*.02)],t2=t[Math.min(n-1,Math.floor(n*.98))];
@@ -1217,7 +1223,7 @@ function tipCands(i){
 }
 function fuse(lists){
   if(!lists.length)return null;
-  if(lists.length===1)return lists[0].c[0];
+  if(lists.length===1)return {mm:lists[0].c[0].mm,spread:null};
   let best=null,bs=Infinity;
   const combo=(sets)=>{const rec=(k,acc)=>{if(k===sets.length){let s=0,c=0;for(let a=0;a<acc.length;a++)for(let b=a+1;b<acc.length;b++){s+=Math.hypot(acc[a].mm[0]-acc[b].mm[0],acc[a].mm[1]-acc[b].mm[1]);c++}s/=c;if(s<bs){bs=s;best=acc.slice()}return}for(const x of sets[k].c){acc.push(x);rec(k+1,acc);acc.pop()}};rec(0,[])};
   combo(lists);
@@ -1239,7 +1245,10 @@ function fix20(ids){let n=0;
   if(VIEW==='cams')renderCams();updateDetState();toast(need20()?'Richting deels vastgelegd':'Kalibratie klaar')}
 function detectDart(ids){if(need20()){fix20(ids);return}
   const lists=[];for(const i of ids){const rt=CAMRT[i];if(rt.chg<=DB.set.minPx)continue;const c=tipCands(i);rt.lastCands=c;if(c)lists.push({i,c})}
+  const need=Math.min(2,ids.length);
+  if(lists.length<need){DET.info='Genegeerd: maar '+lists.length+' camera zag iets';DET.ignored=(DET.ignored||0)+1;return}
   const f=fuse(lists);if(!f)return;
+  if(need>=2&&f.spread!=null&&f.spread>22){DET.info='Genegeerd: camera\'s zijn het oneens ('+Math.round(f.spread)+' mm)';DET.ignored=(DET.ignored||0)+1;return}
   const mm=f.mm||f;lists.forEach(l=>{const u=l.c.find(x=>x.used)||l.c[0];CAMRT[l.i].last=u.px});
   const [x,y]=mm;if(Math.hypot(x,y)>235)return;
   const s=scoreAt(x,y);const d={n:s.n,m:s.m,x,y,src:'cam'};DET.info='Pijl gezien: '+lbl(d);
