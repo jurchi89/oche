@@ -160,17 +160,13 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .route{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;min-height:48px}
 .rchip{padding:4px 16px;border-radius:99px;border:2px solid var(--gold);color:var(--gold);font-family:var(--f-display);font-weight:800;font-size:26px;animation:pop .3s ease-out}
 .rchip:first-child{background:var(--gold);color:#fff}
-.cobar{display:flex;align-items:center;gap:10px;background:var(--panel);border:2px solid var(--accent);border-radius:18px;padding:8px 12px;box-shadow:0 10px 26px rgba(242,90,44,.18);animation:coin .35s ease}
-.cobar.setup{border-color:#e0a21b;box-shadow:0 10px 26px rgba(224,162,27,.18)}
+.cobar{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:8px 12px;box-shadow:0 8px 22px rgba(20,40,30,.08);animation:coin .35s ease}
 @keyframes coin{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
 .colab{display:flex;flex-direction:column;align-items:center;line-height:1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-right:10px;border-right:1px solid var(--line)}
 .colab b{font-family:var(--f-display);font-size:34px;color:var(--text);letter-spacing:0}
-.cobar.setup .colab{color:#b77d00}
 .cod{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,3.6vh,40px);line-height:1;padding:8px 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);min-width:84px;text-align:center}
-.cod.dbl{border-color:var(--green);color:var(--green)}
 .cod.now{background:var(--accent);border-color:var(--accent);color:#fff;animation:copulse 1.4s ease-in-out infinite}
-.cobar.setup .cod.now{background:#e0a21b;border-color:#e0a21b}
-.cod.done{font-size:18px;padding:6px 10px;min-width:0;opacity:.5}
+.cod.done{font-size:18px;padding:6px 10px;min-width:0;background:none;border-color:transparent;color:var(--muted)}
 @keyframes copulse{0%,100%{box-shadow:0 0 0 0 rgba(242,90,44,.45)}50%{box-shadow:0 0 0 8px rgba(242,90,44,0)}}
 .coleave{font-size:15px;color:var(--muted);max-width:180px;line-height:1.25}
 .coleave b{color:var(--text);font-size:18px}
@@ -993,7 +989,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1610';
+const APPV='1615';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -1006,7 +1002,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 16:10</div>
+   <div class="small muted">Versie 8 nov 16:15</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
