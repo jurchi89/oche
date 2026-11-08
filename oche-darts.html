@@ -256,7 +256,7 @@ main:has(#groot){max-width:none;padding-block:10px}
 .mrow.onescreen .pc.on{transform:none}
 .mrow.onescreen .pc-sub{font-size:16px}.mrow.onescreen .pc-darts{font-size:16px}
 .mrow.onescreen .mcenter{min-height:0;justify-content:center}
-.mrow.onescreen .mcenter .boardwrap{width:min(44vw,calc(100dvh - 76px - 58px - 200px));max-width:none}
+.mrow.onescreen .mcenter .boardwrap{width:min(46vw,calc(100dvh - 76px - 58px - 112px));max-width:none}
 .demophone{position:fixed;right:18px;bottom:18px;z-index:900;width:250px;background:#111;border-radius:30px;padding:10px 10px 14px;box-shadow:0 18px 50px rgba(0,0,0,.35)}
 .demophone.big{width:360px}
 .demophone .dphead{display:flex;justify-content:space-between;align-items:center;color:#fff;font-size:12px;padding:2px 8px 8px}
@@ -339,6 +339,12 @@ main:has(#groot){max-width:none;padding-block:10px}
 /* wedstrijdscherm */
 #groot{display:flex;flex-direction:column;gap:14px}
 .mtop{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:16px;align-items:start}
+#groot .mtop{grid-template-columns:clamp(240px,21vw,380px) minmax(0,1fr) clamp(320px,27vw,520px);gap:14px}
+.mmid{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;min-width:0}
+.mmid .turnhead{font-size:clamp(22px,3.2vh,34px);max-width:46%}
+.mright{align-items:center;flex-wrap:wrap}
+.mleft .camst{align-self:center}.mchips{align-items:center}
+@media (max-width:1000px){#groot .mtop{grid-template-columns:1fr;justify-items:center}}
 .mleft{display:flex;flex-direction:column;gap:10px;min-width:0}
 .back{background:none;border:0;font-weight:600;font-size:17px;padding:4px 0;text-align:left;color:var(--fg)}
 .mchips{display:flex;gap:6px;flex-wrap:wrap}
@@ -949,9 +955,9 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1545';
+const APPV='1555';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
-function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
+function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
 function guestLink(){const base=DB.set.guestUrl||(location.protocol==='https:'?location.href.split('#')[0].split('?')[0].replace(/[^/]*$/,'')+'oche-gast.html':'https://jurchi89.github.io/oche/oche-gast.html');return base?base+'?v='+APPV+'#'+ONLINE.code:''}
 function onlineSetupHTML(){
@@ -962,7 +968,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:45</div>
+   <div class="small muted">Versie 8 nov 15:55</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1025,7 +1031,7 @@ function onlineState(){
     route:(G.sugg&&!ST.done?(G.sugg(ST)||[]).map(lbl):[]),hint:G.hint?(G.hint(ST)||''):'',
     targets:ST.over||ST.done?[]:G.targets(ST)}}
 function onlineSync(force){if(!ONLINE.conn||!ONLINE.open)return;const st=onlineState();const j=JSON.stringify(st);if(!force&&j===ONLINE.lastSent)return;ONLINE.lastSent=j;try{ONLINE.conn.send(st)}catch(e){}}
-function onlineGameUI(){if(!MATCH||!MATCH.online)return;attachRemote();const gr=$('#groot');if(gr)gr.classList.toggle('guestturn',isGuestTurn());
+function onlineGameUI(){if(MATCH&&!MATCH.online&&ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId))MATCH.online=true;if(!MATCH||!MATCH.online)return;attachRemote();const gr=$('#groot');if(gr)gr.classList.toggle('guestturn',isGuestTurn());
   const r=$('#route');if(r&&isGuestTurn()&&!ST.over)r.innerHTML=`<span class="rtext">${esc(MATCH.players[ST.cur].name)} gooit op zijn telefoon…</span>`;
   const c=$('#camtoggle');if(c&&!ONLINE.open)c.insertAdjacentHTML('afterend','');applyCenterView()}
 function updateOnlineChip(){}
@@ -1390,15 +1396,13 @@ function buildGame(G){
       <div class="hist num"></div>${MATCH.online&&MATCH.players[i].id!==ONLINE.guestId?'<div class="ownv" id="ownv" hidden><div class="rvid face"><video id="ownface" autoplay playsinline muted></video><em>Jij</em></div></div>':''}</div><div class="prog"><i></i></div></div>`;
   host.innerHTML=`<div id="groot" class="${two?'two':'solo'}">
     <div class="mtop">
-      <div class="mleft"><button class="back" id="quit">‹ Afsluiten</button><div class="mchips">${matchChips(G).map(c=>`<span>${esc(c)}</span>`).join('')}</div></div>
-      <div class="turnbar"><div class="tb-darts" id="tbd">${[0,1,2].map(()=>'<div class="tbs"></div>').join('')}</div><div class="tb-sum num" id="tbsum">0</div></div>
-      <div class="mright"><button class="ib" id="fs" title="Volledig scherm">⛶</button><button class="ib" id="tostats2" title="Statistieken">▮▮▮</button><button class="btn" id="tocams" title="Camera's en kalibratie, zonder je pot te verlaten">⚙ Kalibreren</button></div>
+      <div class="mleft"><button class="back" id="quit">‹ Afsluiten</button><div class="mchips">${matchChips(G).map(c=>`<span>${esc(c)}</span>`).join('')}<div class="camst"><button class="cambtn" id="camtoggle"></button><span class="dstate" id="dstate"></span></div></div></div>
+      <div class="mmid"><div class="turnhead" id="turnhead"></div><div class="turnbar"><div class="tb-darts" id="tbd">${[0,1,2].map(()=>'<div class="tbs"></div>').join('')}</div><div class="tb-sum num" id="tbsum">0</div></div></div>
+      <div class="mright"><div class="viewseg seg" id="viewseg"><button data-v="board">Bord</button><button data-v="live">Live</button><button data-v="cam0">Cam 1</button><button data-v="cam1">Cam 2</button><button data-v="cam2">Cam 3</button></div><button class="ib" id="fs" title="Volledig scherm">⛶</button><button class="ib" id="tostats2" title="Statistieken">▮▮▮</button><button class="btn" id="tocams" title="Camera's en kalibratie, zonder je pot te verlaten">⚙ Kalibreren</button></div>
     </div>
     <div class="mrow onescreen">
       <div class="plist n${MATCH.players.length}">${MATCH.players.map((_,i)=>card(i)).join('')}<div id="gpanelwrap"></div></div>
-      <div class="mcenter"><div class="camst"><button class="cambtn" id="camtoggle"></button><span class="dstate" id="dstate"></span></div>
-        <div class="turnhead" id="turnhead"></div>
-        <div class="viewseg seg" id="viewseg"><button data-v="board">Bord</button><button data-v="live">Live</button><button data-v="cam0">Cam 1</button><button data-v="cam1">Cam 2</button><button data-v="cam2">Cam 3</button></div>
+      <div class="mcenter">
         <div class="route" id="route"></div>
         <div class="boardwrap glow">${boardSVG('gboard')}<div class="livewrap" id="livewrap" hidden><video id="livev" autoplay muted playsinline></video><svg id="liveov" viewBox="-228 -228 456 456" preserveAspectRatio="xMidYMid meet"><g class="marks"></g></svg><span class="livelab" id="livelab"></span></div><div class="callout" id="callout"></div></div></div>
       <div class="inpanel" id="drawer"><div class="pad">
