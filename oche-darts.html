@@ -989,7 +989,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1615';
+const APPV='1620';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -1002,7 +1002,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 16:15</div>
+   <div class="small muted">Versie 8 nov 16:20</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1063,6 +1063,7 @@ function onlineState(){
     players:ST.players.map((p,i)=>({name:MATCH.players[i].name,big:String(G.big(ST,i)),sub:MATCH.game==='x01'?'Gem. '+avg3(ST.stat[i].pts,ST.stat[i].darts)+(+ST.o.legs>1?' · legs '+p.legs:''):G.sub(ST,i)})),
     darts:ST.tdarts.map(lbl),tpts:ST.tpts||0,done:!!ST.done,msg:ST.msg||'',
     route:(G.sugg&&!ST.done?(G.sugg(ST)||[]).map(lbl):[]),hint:G.hint?(G.hint(ST)||''):'',
+    plan:(()=>{const pl=coPlan(ST);return pl?{kind:pl.kind,rem:pl.rem,darts:pl.kind==='finish'?pl.darts.map(lbl):[lbl(pl.t)],leave:pl.leave??null,done:ST.tdarts.map(lbl)}:null})(),
     targets:ST.over||ST.done?[]:G.targets(ST)}}
 function onlineSync(force){if(!ONLINE.conn||!ONLINE.open)return;const st=onlineState();const j=JSON.stringify(st);if(!force&&j===ONLINE.lastSent)return;ONLINE.lastSent=j;try{ONLINE.conn.send(st)}catch(e){}}
 function onlineGameUI(){if(MATCH&&!MATCH.online&&ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId))MATCH.online=true;if(!MATCH||!MATCH.online)return;attachRemote();const gr=$('#groot');if(gr)gr.classList.toggle('guestturn',isGuestTurn());

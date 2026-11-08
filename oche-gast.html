@@ -80,6 +80,15 @@ body.mine #ownbig{display:none!important}
 .vid .big-msg{color:#fff;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
 .route{display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
 .route:empty{display:none}
+.route .cobar{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:5px 8px;box-shadow:0 6px 16px rgba(20,40,30,.08);width:100%;justify-content:center}
+.route i{font-style:normal}
+.route .cl{display:flex;flex-direction:column;align-items:center;line-height:1;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding-right:7px;border-right:1px solid var(--line)}
+.route .cl b{font-family:var(--f-display);font-size:24px;color:var(--fg,#13201c);letter-spacing:0}
+.route .cd{font-family:var(--f-display);font-weight:800;font-size:24px;line-height:1;padding:6px 10px;border-radius:10px;background:var(--panel2,#eef2ef);border:1px solid var(--line);min-width:52px;text-align:center}
+.route .cd.now{background:var(--accent);border-color:var(--accent);color:#fff}
+.route .cd.done{font-size:14px;padding:4px 4px;min-width:0;background:none;border-color:transparent;color:var(--muted)}
+.route .cv{font-size:12px;color:var(--muted);line-height:1.2;max-width:80px}
+.route .cv b{color:var(--fg,#13201c)}
 .route span{border:2px solid var(--gold);color:var(--gold);border-radius:99px;padding:1px 12px;font-family:var(--f-display);font-weight:800;font-size:20px}
 .route span:first-child{background:var(--gold);color:#fff}
 #pad{flex:1;min-height:0;display:grid;grid-template-rows:auto 1fr auto;gap:6px}
@@ -116,7 +125,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 15:55</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 16:20</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -227,7 +236,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
-const GVER='1555';
+const GVER='1620';
 const STR={board:null,face:null};let SWAP=false,ROT=0;
 function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
@@ -298,7 +307,9 @@ function onMsg(m){if(!m||typeof m!=='object')return;
   else if(m.msg==='Bust'){st.textContent='Bust';st.className='status me'}
   else if(mine){st.textContent=m.done?'Tik op Volgende beurt':'Jouw beurt';st.className='status me'}
   else{st.textContent=m.players[m.cur].name+' gooit';st.className='status'}
-  $('#route').innerHTML=mine&&m.route.length?m.route.map(r=>`<span>${esc(r)}</span>`).join(''):(mine&&m.hint?`<span style="background:none;border:0;color:var(--fg)">${esc(m.hint)}</span>`:'');
+  if(mine&&m.plan){const P=m.plan,done=P.done.map(d=>`<i class="cd done">${esc(d)}</i>`).join('');
+    $('#route').innerHTML=`<div class="cobar"><i class="cl">${P.kind==='finish'?'Uitgooien':'Geen finish'}<b>${P.rem}</b></i>${done}${P.darts.map((d,k)=>`<i class="cd ${k===0?'now':''}">${esc(d)}</i>`).join('')}${P.kind==='setup'?`<i class="cv">laat <b>${P.leave}</b> staan</i>`:''}</div>`}
+  else $('#route').innerHTML=mine&&m.route.length?m.route.map(r=>`<span>${esc(r)}</span>`).join(''):(mine&&m.hint?`<span style="background:none;border:0;color:var(--fg)">${esc(m.hint)}</span>`:'');
   $('#pad').classList.toggle('locked',!mine);document.body.classList.toggle('mine',mine);document.body.classList.add('ingame');ownViews(false,mine);layoutStage();
 
   $('#facelab').dataset.host=(m.players.find((p,i)=>i!==m.gi)||{name:'je maat'}).name;placeStreams();
