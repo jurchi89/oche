@@ -911,7 +911,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1545';
+const APPV='1615';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -922,9 +922,9 @@ function onlineSetupHTML(){
   return `<div class="row"><span class="code">${ONLINE.code}</span><span class="chip ${ONLINE.open?'ok':'warn'}"><i></i>${ONLINE.open?esc(ONLINE.guestName)+' is verbonden':'Wachten op je maat…'}</span></div>
    ${link?`<div class="small">Stuur je maat deze link:</div><div class="row"><input type="text" id="glink" readonly value="${esc(link)}" style="flex:1"><button class="btn" id="copylink">Kopiëren</button></div>`:`<div class="small muted">Je maat opent de telefoonpagina en vult de code <b>${ONLINE.code}</b> in.</div>`}
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
-   <label class="f">Bordbeeld voor je maat<select id="bview"><option value="front" ${(DB.set.boardView||'front')==='front'?'selected':''}>Recht van voren, 20 boven</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
+   <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 15:45</div>
+   <div class="small muted">Versie 8 nov 16:15</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1002,22 +1002,42 @@ function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
   const r=deg*Math.PI/180,c=Math.abs(Math.cos(r)),s=Math.abs(Math.sin(r));const bw=cw*c+ch*s,bh=cw*s+ch*c;const k=Math.min(W/bw,H/bh);
   video.style.transform=`rotate(${deg}deg) scale(${k.toFixed(3)})`}
-// vooraanzicht: camerabeeld omrekenen naar een recht bord met de 20 boven (via de kalibratie)
-const FRONT={i:-1,cv:null,ctx:null,src:null,sctx:null,lut:null,out:null,stream:null,key:'',timer:null};
-function frontStream(i){const rt=CAMRT[i];if(i<0||!rt||!rt.stream||!rt.Hinv)return null;const v=rt.stream.video;if(!v.videoWidth)return null;
-  const [sx,sy,sw,sh]=cropRect(i,v);const SW=Math.min(640,Math.round(sw)),SH=Math.round(SW*sh/sw);const key=i+'|'+JSON.stringify(DB.cams[i].pts)+'|'+SW+'x'+SH;
-  if(FRONT.key!==key){const N=480,R=228;FRONT.key=key;FRONT.i=i;
-    if(!FRONT.cv){FRONT.cv=document.createElement('canvas');FRONT.cv.width=N;FRONT.cv.height=N;FRONT.ctx=FRONT.cv.getContext('2d');FRONT.out=FRONT.ctx.createImageData(N,N);FRONT.stream=FRONT.cv.captureStream(24)}
-    FRONT.src=document.createElement('canvas');FRONT.src.width=SW;FRONT.src.height=SH;FRONT.sctx=FRONT.src.getContext('2d',{willReadFrequently:true});
-    const lut=new Int32Array(N*N);for(let y=0;y<N;y++)for(let x=0;x<N;x++){const X=(x-N/2)/(N/2)*R,Y=(N/2-y)/(N/2)*R;let k=-1;
-      if(X*X+Y*Y<=R*R){const p=applyH(rt.Hinv,X,Y);if(p[2]!==undefined&&p[2]<=0){}const px=Math.round(p[0]*SW),py=Math.round(p[1]*SH);if(px>=0&&py>=0&&px<SW&&py<SH)k=py*SW+px}lut[y*N+x]=k}
-    FRONT.lut=lut;
-    if(!FRONT.timer)FRONT.timer=setInterval(()=>{const r=CAMRT[FRONT.i];if(!r||!r.stream)return;const vv=r.stream.video;if(vv.readyState<2)return;const [a,b,c,d]=cropRect(FRONT.i,vv);
-      FRONT.sctx.drawImage(vv,a,b,c,d,0,0,FRONT.src.width,FRONT.src.height);const sd=FRONT.sctx.getImageData(0,0,FRONT.src.width,FRONT.src.height).data,od=FRONT.out.data,L=FRONT.lut;
-      for(let q=0,o=0;q<L.length;q++,o+=4){const k=L[q];if(k<0){od[o]=16;od[o+1]=19;od[o+2]=17;od[o+3]=255}else{const j=k*4;od[o]=sd[j];od[o+1]=sd[j+1];od[o+2]=sd[j+2];od[o+3]=255}}
-      FRONT.ctx.putImageData(FRONT.out,0,0)},42)}
+// vooraanzicht: camerabeelden omrekenen naar een recht bord met de 20 boven (via de kalibratie).
+// Per beeldpunt wordt de camera gekozen die dat stukje bord het scherpst ziet (meeste camerapixels per mm),
+// met zachte overgangen tussen camera's en bilineaire interpolatie in plaats van 'dichtstbijzijnde pixel'.
+const FRONT={i:-1,cv:null,ctx:null,out:null,stream:null,key:'',timer:null,cams:[],C1:null,C2:null,I1:null,I2:null,F:null,W2:null};
+function frontCams(i){const ok=k=>{const r=CAMRT[k];return r&&r.stream&&r.Hinv&&r.stream.video.videoWidth>0&&DB.cams[k]&&DB.cams[k].use!==false};
+  if((DB.set.boardView||'multi')!=='front'){const all=CAMRT.map((r,k)=>k).filter(k=>ok(k)&&!DB.cams[k].need20);if(all.length)return all}
+  return i!=null&&i>=0&&ok(i)?[i]:[]}
+function frontStream(i){const ids=frontCams(i);if(!ids.length)return null;const N=560,R=228;
+  const cams=ids.map(k=>{const v=CAMRT[k].stream.video,[sx,sy,sw,sh]=cropRect(k,v),SW=Math.round(sw),SH=Math.round(sh);return {k,SW,SH}});
+  const key=JSON.stringify(cams)+'|'+ids.map(k=>JSON.stringify(DB.cams[k].pts)).join('|');
+  if(!FRONT.cv){FRONT.cv=document.createElement('canvas');FRONT.cv.width=N;FRONT.cv.height=N;FRONT.ctx=FRONT.cv.getContext('2d');FRONT.out=FRONT.ctx.createImageData(N,N);FRONT.stream=FRONT.cv.captureStream(24)}
+  if(FRONT.key!==key){FRONT.key=key;FRONT.i=ids[0];
+    cams.forEach(c=>{c.cv=document.createElement('canvas');c.cv.width=c.SW;c.cv.height=c.SH;c.ctx=c.cv.getContext('2d',{willReadFrequently:true})});
+    const M=N*N,C1=new Uint8Array(M).fill(255),C2=new Uint8Array(M).fill(255),I1=new Int32Array(M),I2=new Int32Array(M),F=new Uint8Array(M*4),W2=new Uint8Array(M);
+    const src=(c,X,Y)=>{const p=applyH(CAMRT[c.k].Hinv,X,Y);return [p[0]*c.SW-0.5,p[1]*c.SH-0.5]};
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){const q=y*N+x,X=(x-N/2)/(N/2)*R,Y=(N/2-y)/(N/2)*R;if(X*X+Y*Y>R*R)continue;
+      let b1=-1,s1=0,b2=-1,s2=0,u1,v1,u2,v2;
+      for(let ci=0;ci<cams.length;ci++){const c=cams[ci],a=src(c,X,Y);const [u,v]=a;if(!(u>=0&&v>=0&&u<c.SW-1&&v<c.SH-1))continue;
+        const ax=src(c,X+1,Y),ay=src(c,X,Y+1);const s=Math.abs((ax[0]-u)*(ay[1]-v)-(ax[1]-v)*(ay[0]-u));
+        if(s>s1){b2=b1;s2=s1;u2=u1;v2=v1;b1=ci;s1=s;u1=u;v1=v}else if(s>s2){b2=ci;s2=s;u2=u;v2=v}}
+      if(b1<0)continue;C1[q]=b1;const fx=Math.floor(u1),fy=Math.floor(v1);I1[q]=(fy*cams[b1].SW+fx)*4;F[q*4]=Math.round((u1-fx)*255);F[q*4+1]=Math.round((v1-fy)*255);
+      if(b2>=0){const r=s2/s1;if(r>0.8){const gx=Math.floor(u2),gy=Math.floor(v2);C2[q]=b2;I2[q]=(gy*cams[b2].SW+gx)*4;F[q*4+2]=Math.round((u2-gx)*255);F[q*4+3]=Math.round((v2-gy)*255);W2[q]=Math.round((r-0.8)/0.2*128)}}}
+    Object.assign(FRONT,{cams,C1,C2,I1,I2,F,W2});
+    if(!FRONT.timer)FRONT.timer=setInterval(frontTick,42)}
   return FRONT.stream}
-function sharedBoardStream(){const i=shareIdx();if(i<0)return null;if((DB.set.boardView||'front')==='front'){const f=frontStream(i);if(f)return f}return CAMRT[i].stream.stream}
+function frontTick(){const cams=FRONT.cams;if(!cams.length)return;const D=[];
+  for(const c of cams){const r=CAMRT[c.k];if(!r||!r.stream)return;const vv=r.stream.video;if(vv.readyState<2)return;const [a,b,w,h]=cropRect(c.k,vv);c.ctx.drawImage(vv,a,b,w,h,0,0,c.SW,c.SH);D.push(c.ctx.getImageData(0,0,c.SW,c.SH).data)}
+  const od=FRONT.out.data,C1=FRONT.C1,C2=FRONT.C2,I1=FRONT.I1,I2=FRONT.I2,F=FRONT.F,W2=FRONT.W2,S=cams.map(c=>c.SW*4);
+  for(let q=0,o=0;q<C1.length;q++,o+=4){const c=C1[q];if(c===255){od[o]=16;od[o+1]=19;od[o+2]=17;od[o+3]=255;continue}
+    let d=D[c],j=I1[q],s=S[c],fx=F[q*4],fy=F[q*4+1],w00=(255-fx)*(255-fy),w10=fx*(255-fy),w01=(255-fx)*fy,w11=fx*fy;
+    let R0=(d[j]*w00+d[j+4]*w10+d[j+s]*w01+d[j+s+4]*w11)/65025,G0=(d[j+1]*w00+d[j+5]*w10+d[j+s+1]*w01+d[j+s+5]*w11)/65025,B0=(d[j+2]*w00+d[j+6]*w10+d[j+s+2]*w01+d[j+s+6]*w11)/65025;
+    const c2=C2[q];if(c2!==255){const t=W2[q]/256;d=D[c2];j=I2[q];s=S[c2];fx=F[q*4+2];fy=F[q*4+3];w00=(255-fx)*(255-fy);w10=fx*(255-fy);w01=(255-fx)*fy;w11=fx*fy;
+      R0=R0*(1-t)+t*(d[j]*w00+d[j+4]*w10+d[j+s]*w01+d[j+s+4]*w11)/65025;G0=G0*(1-t)+t*(d[j+1]*w00+d[j+5]*w10+d[j+s+1]*w01+d[j+s+5]*w11)/65025;B0=B0*(1-t)+t*(d[j+2]*w00+d[j+6]*w10+d[j+s+2]*w01+d[j+s+6]*w11)/65025}
+    od[o]=R0;od[o+1]=G0;od[o+2]=B0;od[o+3]=255}
+  FRONT.ctx.putImageData(FRONT.out,0,0)}
+function sharedBoardStream(){const i=shareIdx();if(i<0)return null;if((DB.set.boardView||'multi')!=='raw'){const f=frontStream(i);if(f)return f}return CAMRT[i].stream.stream}
 function ownBoardStream(){const pick=DB.set.shareCam!=null&&CAMRT[DB.set.shareCam]&&CAMRT[DB.set.shareCam].stream?CAMRT[DB.set.shareCam]:CAMRT.find(r=>r.stream);return pick?pick.stream.stream:null}
 async function showOwnCard(){const w=$('#ownv');if(!w)return false;if(!DB.set.faceLabel){w.hidden=true;return true}
   const st=await faceStream();if(!st){w.hidden=true;return true}const f=$('#ownface');if(f.srcObject!==st){f.srcObject=st;f.play().catch(()=>{})}
