@@ -739,7 +739,7 @@ function onlineSetupHTML(){
    ${link?`<div class="small">Stuur je maat deze link:</div><div class="row"><input type="text" id="glink" readonly value="${esc(link)}" style="flex:1"><button class="btn" id="copylink">Kopiëren</button></div>`:`<div class="small muted">Je maat opent de telefoonpagina en vult de code <b>${ONLINE.code}</b> in.</div>`}
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 02:05</div>
+   <div class="small muted">Versie 8 nov 02:10</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -1132,12 +1132,18 @@ async function findCams(){
   }
   if(!err&&DEVICES.length){
     // automatisch verdelen: elk slot een eigen camera; bij 1 apparaat het beeld in drieën delen
-    const ids=DEVICES.map(d=>d.deviceId);
+    // nooit twee keer hetzelfde apparaat (behalve bij één apparaat dat in drieën gedeeld wordt)
+    const ids=DEVICES.map(d=>d.deviceId),used=new Set(),share=DEVICES.length<3;
+    const isFace=d=>DB.set.faceLabel&&d.label===DB.set.faceLabel;
+    const boardLab=(()=>{const cnt={};DEVICES.forEach(d=>cnt[d.label]=(cnt[d.label]||0)+1);return Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0]})();
+    const free=()=>DEVICES.filter(d=>!used.has(d.deviceId)&&!isFace(d)).sort((a,b)=>(b.label===boardLab)-(a.label===boardLab))[0];
     for(let i=0;i<3;i++){const c=DB.cams[i];
-      if(c.deviceId&&ids.includes(c.deviceId))continue;
-      if(c.devIndex!=null&&DEVICES[c.devIndex]&&c.pts){c.deviceId=DEVICES[c.devIndex].deviceId;c.label=DEVICES[c.devIndex].label;CAMRT[i].stream=null;CAMRT[i].PW=0;continue}
-      const pick=DEVICES.length>=3?DEVICES[i]:DEVICES.length===2?DEVICES[Math.min(i,1)]:DEVICES[0];
-      c.deviceId=pick.deviceId;c.label=pick.label;c.pts=null;c.devIndex=DEVICES.indexOf(pick);
+      if(!share&&c.deviceId&&ids.includes(c.deviceId)&&!used.has(c.deviceId)){used.add(c.deviceId);c.devIndex=ids.indexOf(c.deviceId);continue}
+      if(share&&c.deviceId&&ids.includes(c.deviceId))continue;
+      if(!share&&c.devIndex!=null&&DEVICES[c.devIndex]&&!used.has(DEVICES[c.devIndex].deviceId)&&c.pts&&!c.deviceId){c.deviceId=DEVICES[c.devIndex].deviceId;c.label=DEVICES[c.devIndex].label;used.add(c.deviceId);CAMRT[i].stream=null;CAMRT[i].PW=0;continue}
+      const pick=share?(DEVICES.length===2?DEVICES[Math.min(i,1)]:DEVICES[0]):free();if(!pick)continue;
+      if(pick.deviceId!==c.deviceId){c.pts=null;c.need20=false}
+      c.deviceId=pick.deviceId;c.label=pick.label;c.devIndex=DEVICES.indexOf(pick);used.add(pick.deviceId);
       if(DEVICES.length===1)c.crop=['l3','m3','r3'][i];
       CAMRT[i].stream=null;CAMRT[i].PW=0;}
     save();
@@ -1306,7 +1312,7 @@ function renderCams(){
   const sup=camSupported();
   const devOpts=(i)=>{const cur=DB.cams[i].deviceId;let o='<option value="">— kies camera —</option>';
     const list=DEVICES.length?DEVICES:(cur?[{deviceId:cur,label:DB.cams[i].label||'Opgeslagen camera'}]:[]);
-    list.forEach((d,k)=>o+=`<option value="${esc(d.deviceId)}" ${d.deviceId===cur?'selected':''}>${esc(d.label||'Camera '+(k+1))}</option>`);return o};
+    list.forEach((d,k)=>{const other=DB.cams.findIndex((c,j)=>j!==i&&c.deviceId===d.deviceId);o+=`<option value="${esc(d.deviceId)}" ${d.deviceId===cur?'selected':''}>${esc((d.label||'Camera')+' #'+(k+1))}${other>=0?' (nu bij camera '+(other+1)+')':''}</option>`});return o};
   $('#v-cams').innerHTML=`
    <div class="setgrid">
     <div class="box stack"><h2>Camera's &amp; kalibratie</h2>
@@ -1341,7 +1347,12 @@ function renderCams(){
   $('#testmode').onchange=async e=>{DET.test=e.target.checked;if(DET.test){await startAllCams();resetRefs()}DET.testHits=[];paintTest()};
   $$('.cam').forEach(card=>{const i=+card.dataset.i;
     $$('[data-k]',card).forEach(el=>el.onchange=async()=>{const k=el.dataset.k;const v=el.type==='checkbox'?el.checked:el.value;
-      if(k==='deviceId'){const d=DEVICES.find(d=>d.deviceId===v);DB.cams[i].label=d?d.label:'';CAMRT[i].stream=null;}
+      if(k==='deviceId'){const d=DEVICES.find(d=>d.deviceId===v);DB.cams[i].label=d?d.label:'';CAMRT[i].stream=null;DB.cams[i].devIndex=DEVICES.indexOf(d);
+        // zelfde apparaat al bij een andere camera? dan ruilen
+        const j=DB.cams.findIndex((c,jj)=>jj!==i&&c.deviceId===v);if(j>=0&&DEVICES.length>=3){const old=DB.cams[i].deviceId;const od=DEVICES.find(x=>x.deviceId===old);
+          const tmp={deviceId:DB.cams[j].deviceId,pts:DB.cams[j].pts,need20:DB.cams[j].need20,autoQ:DB.cams[j].autoQ};
+          DB.cams[j].deviceId=old||'';DB.cams[j].label=od?od.label:'';DB.cams[j].devIndex=od?DEVICES.indexOf(od):null;DB.cams[j].pts=DB.cams[i].pts;DB.cams[j].need20=DB.cams[i].need20;DB.cams[j].autoQ=DB.cams[i].autoQ;CAMRT[j].stream=null;CAMRT[j].PW=0;setupCalib(j);
+          DB.cams[i].pts=tmp.pts;DB.cams[i].need20=tmp.need20;DB.cams[i].autoQ=tmp.autoQ;DB.cams[i][k]=v;save();await startCam(i);if(old)await startCam(j);setupCalib(i);updateChip();renderCams();toast('Camera '+(i+1)+' en '+(j+1)+' omgewisseld');return}}
       if(k==='crop'||k==='deviceId'){DB.cams[i].pts=null;CAMRT[i].PW=0;CAMRT[i].H=null;CAMRT[i].Hinv=null}
       DB.cams[i][k]=v;save();if(k==='deviceId'&&v){await startCam(i)}if(k==='crop'){CAMRT[i].PW=0}updateChip();renderCams()});
     $('[data-a=auto]',card).onclick=async()=>{if(!CAMRT[i].stream)await startCam(i);await autoCalAll(i)};
