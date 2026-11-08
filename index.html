@@ -778,12 +778,27 @@ function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
 function playerByName(name){name=name.trim();if(!name)return null;let p=DB.players.find(p=>p.name.toLowerCase()===name.toLowerCase());
   if(!p){p={id:uid(),name};DB.players.push(p);save()}return p}
-function say(t){if(!DB.set.voice||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='nl-NL';speechSynthesis.speak(u)}catch(e){}}
+function say(t,en){if(!DB.set.voice||!window.speechSynthesis)return;if(callerOn()&&!en)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='nl-NL';speechSynthesis.speak(u)}catch(e){}}
+// ---------- Engelse darts-caller ----------
+function callerOn(){return DB.set.voice&&DB.set.voiceLang==='en'}
+const ONES=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'],TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function enNum(n){n=Math.round(n);if(n<20)return ONES[n];if(n<100)return TENS[Math.floor(n/10)]+(n%10?'-'+ONES[n%10]:'');const h=Math.floor(n/100),r=n%100;return ONES[h]+' hundred'+(r?' and '+enNum(r):'')}
+function enVoice(){const vs=(window.speechSynthesis&&speechSynthesis.getVoices())||[];if(DB.set.callerVoice){const v=vs.find(v=>v.name===DB.set.callerVoice);if(v)return v}
+  const en=vs.filter(v=>/^en/i.test(v.lang));const score=v=>(/en-GB/i.test(v.lang)?10:0)+(/male|george|ryan|daniel|arthur|thomas|oliver|guy|brian|uk english male/i.test(v.name)?6:0)+(/natural|online|neural/i.test(v.name)?4:0)+(/female|hazel|susan|libby|sonia|zira|samantha|kate/i.test(v.name)?-5:0);
+  return en.sort((a,b)=>score(b)-score(a))[0]||null}
+function callerSay(parts){if(!callerOn()||!window.speechSynthesis)return;try{speechSynthesis.cancel();const v=enVoice();
+  for(const p of parts){const u=new SpeechSynthesisUtterance(p.t);u.lang=v?v.lang:'en-GB';if(v)u.voice=v;u.rate=p.rate||0.95;u.pitch=p.pitch||0.8;u.volume=1;speechSynthesis.speak(u)}}catch(e){}}
+function callScore(sc){if(sc===0)return callerSay([{t:'No score!',rate:0.9}]);
+  if(sc===180)return callerSay([{t:'One hundred',rate:0.75,pitch:0.85},{t:'and eighty!',rate:0.62,pitch:0.95}]);
+  if(sc>=100)return callerSay([{t:enNum(sc)+'!',rate:0.82,pitch:0.85}]);
+  callerSay([{t:enNum(sc),rate:0.9}])}
+function callRequire(name,n){callerSay([{t:name+', you require',rate:0.92},{t:enNum(n)+'.',rate:0.85}])}
+function callGameShot(kind){callerSay([{t:'Game shot!',rate:0.78,pitch:0.9},{t:'And the '+kind+'!',rate:0.82,pitch:0.85}])}
 
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1345';
+const APPV='1400';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&MATCH.online&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -796,7 +811,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="front" ${(DB.set.boardView||'front')==='front'?'selected':''}>Recht van voren, 20 boven</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 13:45</div>
+   <div class="small muted">Versie 8 nov 14:00</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <button class="btn danger" id="closeroom">Online stoppen</button>`;
 }
@@ -957,7 +972,7 @@ function rotateTo(pl,w){return pl.slice(w).concat(pl.slice(0,w))}
 function coinToss(pl,go){const w=Math.floor(Math.random()*pl.length);
   $('#overlay').innerHTML=`<div class="ov"><div class="box stack startbox" style="align-items:center;text-align:center"><div class="coin" id="coin">€</div><h2 id="coinres">De munt draait…</h2><button class="btn primary" id="cgo" hidden>Start spel</button></div></div>`;
   let k=0;const names=pl.map(p=>p.name);const iv=setInterval(()=>{$('#coinres').textContent=names[k++%names.length]},110);
-  setTimeout(()=>{clearInterval(iv);$('#coinres').textContent=pl[w].name+' begint';say(pl[w].name+' begint');$('#cgo').hidden=false;$('#coin').classList.add('done')},1700);
+  setTimeout(()=>{clearInterval(iv);$('#coinres').textContent=pl[w].name+' begint';say(pl[w].name+' begint');BULL.called=true;callerSay([{t:pl[w].name+' to throw first.',rate:0.9},{t:'Game on!',rate:0.8,pitch:0.9}]);$('#cgo').hidden=false;$('#coin').classList.add('done')},1700);
   $('#cgo').onclick=()=>{$('#overlay').innerHTML='';go(rotateTo(pl,w))}}
 function bullThrower(){const p=BULL.pl[BULL.cands[BULL.i]];return p.members?p.members[0]:p}
 function startBull(pl,go){Object.assign(BULL,{active:true,pl,go,i:0,res:[],cands:pl.map((_,k)=>k)});
@@ -977,7 +992,7 @@ function renderBull(){const done=BULL.i>=BULL.cands.length;const th=done?null:bu
   $('#bstop').onclick=()=>{BULL.active=false;$('#overlay').innerHTML=''};
   if(done){const ds=BULL.cands.map(k=>BULL.res[k]);const best=Math.min(...ds);const tied=BULL.cands.filter(k=>Math.abs(BULL.res[k]-best)<1);
     if(tied.length>1){$('#bullres').innerHTML=`<b>Gelijk!</b> ${tied.map(k=>esc(BULL.pl[k].name)).join(' en ')} gooien opnieuw.`;setTimeout(()=>{BULL.cands=tied;BULL.i=0;tied.forEach(k=>BULL.res[k]=null);renderBull()},1800);return}
-    const w=tied[0];$('#bullres').innerHTML=`<p class="win" style="font-size:34px">${esc(BULL.pl[w].name)} begint</p>`;say(BULL.pl[w].name+' begint');$('#bgo').hidden=false;
+    const w=tied[0];$('#bullres').innerHTML=`<p class="win" style="font-size:34px">${esc(BULL.pl[w].name)} begint</p>`;say(BULL.pl[w].name+' begint');BULL.called=true;callerSay([{t:BULL.pl[w].name+' to throw first.',rate:0.9},{t:'Game on!',rate:0.8,pitch:0.9}]);$('#bgo').hidden=false;
     $('#bgo').onclick=()=>{BULL.active=false;$('#overlay').innerHTML='';BULL.go(rotateTo(BULL.pl,w))};return}
   if(th.bot)setTimeout(()=>{if(!BULL.active)return;const sg=botSigma(th.bot)*0.8;bullDart({x:gaussR()*sg,y:gaussR()*sg,src:'bot'})},1100)}
 function bullDart(d){if(!BULL.active||BULL.i>=BULL.cands.length)return;if(d.x==null)return;const k=BULL.cands[BULL.i];BULL.res[k]=Math.hypot(d.x,d.y);BULL.pos=BULL.pos||[];BULL.pos[k]=[d.x,d.y];BULL.i++;sfx(d);renderBull()}
@@ -995,14 +1010,14 @@ async function submitTotal(v){
   if(!MATCH||MATCH.saved||ST.over)return;if(isBotTurn()||isGuestTurn()){toast('Je bent niet aan de beurt');return}
   if(v>180||IMPOSSIBLE.has(v)){toast(v+' kan niet met drie pijlen');return}
   const t0=curTurn();if(t0&&!t0.closed&&t0.darts.length){toast('Maak eerst deze beurt af of maak de pijlen ongedaan');return}
-  let darts=null,meta=null;
+  let darts=null,meta=null,ck='score';
   if(MATCH.game==='countup'){darts=decomp(v,3,()=>true)}
   else{const p=ST.players[ST.cur],o=ST.o,rem=p.score,out=o.out;
     const fin=v===rem&&p.in&&checkout(rem,3,out);
-    if(fin){const ks=[1,2,3].filter(k=>checkout(rem,k,out));const k=ks.length===1?ks[0]:await askChoice('Uitgegooid!','Met hoeveel pijlen?',ks);
+    if(fin){ck='gs';const ks=[1,2,3].filter(k=>checkout(rem,k,out));const k=ks.length===1?ks[0]:await askChoice('Uitgegooid!','Met hoeveel pijlen?',ks);
       const dbl=out==='straight'?0:await askChoice('Pijlen op de dubbel','Hoeveel pijlen gooide je op een dubbel?',Array.from({length:k},(_,i)=>i+1));
       const r=checkout(rem,k,out);darts=Array.from({length:k-r.length},()=>({n:0,m:0})).concat(r);meta={dbl:Math.max(0,dbl-1)}}
-    else{const bust=v>rem||(out!=='straight'&&rem-v===1)||v===rem;
+    else{const bust=v>rem||(out!=='straight'&&rem-v===1)||v===rem;if(bust)ck='bust';
       const ok=ds=>{let r=rem,inn=p.in;for(let q=0;q<ds.length;q++){const d=ds[q];if(!inn){if(!(o.in==='double'?d.m===2:d.m>=2)){if(val(d))return false;continue}inn=true}r-=val(d);if(!bust&&(r<=0||(r===1&&out!=='straight')))return false}return true};
       darts=(!p.in&&!bust)?decomp(v,3,ok):decomp(v,3,bust?()=>true:ok);
       if(rem<=170&&p.in&&(rem<=50||rem-v<=50||bust)&&out!=='straight'){const dbl=await askChoice('Pijlen op de dubbel','Hoeveel pijlen gooide je op een dubbel?',[0,1,2,3]);meta={dbl}}}}
@@ -1010,7 +1025,7 @@ async function submitTotal(v){
   darts=darts.map(d=>Object.assign({},d,{syn:true}));
   if(t0&&!t0.closed&&!t0.darts.length)MATCH.turns.pop();
   MATCH.turns.push({darts,closed:true,meta});
-  const before=ST;refresh();callout(String(v),v===180?'max':v>=100?'high':'');if(DB.set.voice)say(String(v));
+  CALLREQ=MATCH.game==='x01'&&ck==='score';refresh();if(callerOn()){if(ck==='gs')callGameShot(ST.over?'match':'leg');else callScore(ck==='bust'?0:v)}callout(String(v),v===180?'max':v>=100?'high':'');say(String(v));
 }
 
 // ---------- Navigatie ----------
@@ -1063,13 +1078,20 @@ function renderSetup(){
     <div class="box stack"><h3>Invoer</h3>
       <div class="seg" id="inmode"><button data-m="manual" class="${L.input!=='cam'?'on':''}">Handmatig</button><button data-m="cam" class="${L.input==='cam'?'on':''}">Camera's</button></div>
       <div class="small muted">${calibrated?'Gekalibreerde camera\'s gevonden. Ze starten automatisch bij het spel.':'Nog geen camera gekalibreerd. Dat doe je onder Camera\'s. Handmatig invoeren kan altijd, ook tijdens een camera-spel.'}</div>
-      <label class="row small"><input type="checkbox" id="voice" ${DB.set.voice?'checked':''}> Scores voorlezen</label></div>
+      <div class="opts"><label class="f">Stem<select id="voicesel"><option value="off" ${!DB.set.voice?'selected':''}>Uit</option><option value="nl" ${DB.set.voice&&DB.set.voiceLang!=='en'?'selected':''}>Nederlands</option><option value="en" ${DB.set.voice&&DB.set.voiceLang==='en'?'selected':''}>Engelse darts-caller</option></select></label>
+      <label class="f" ${DB.set.voice&&DB.set.voiceLang==='en'?'':'hidden'} id="cvwrap">Caller-stem<select id="cvoice"></select></label></div>
+      ${DB.set.voice&&DB.set.voiceLang==='en'?'<button class="btn" id="cvtest">Laat horen: “One hundred and eighty!”</button>':''}</div>
     <button class="btn primary" id="startbtn" style="padding:14px;font-size:18px">Start ${G.name}</button>
    </div></div>`;
   $$('.gcard').forEach(b=>b.onclick=()=>{L.game=b.dataset.g;save();renderSetup()});
   $$('[data-o]').forEach(s=>s.onchange=()=>{(L.opts[L.game]=L.opts[L.game]||{})[s.dataset.o]=s.value;save()});
   $$('#inmode button').forEach(b=>b.onclick=()=>{L.input=b.dataset.m;save();renderSetup()});
-  $('#voice').onchange=e=>{DB.set.voice=e.target.checked;save()};
+  $('#voicesel').onchange=e=>{const v=e.target.value;DB.set.voice=v!=='off';DB.set.voiceLang=v==='en'?'en':'nl';save();renderSetup();if(v==='en')setTimeout(()=>callScore(180),300)};
+  const fillVoices=()=>{const sel=$('#cvoice');if(!sel||!window.speechSynthesis)return;const vs=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang));const cur=(enVoice()||{}).name;
+    sel.innerHTML=vs.length?vs.map(v=>`<option value="${esc(v.name)}" ${v.name===cur?'selected':''}>${esc(v.name)} (${esc(v.lang)})</option>`).join(''):'<option>Geen Engelse stem gevonden</option>'};
+  fillVoices();if(window.speechSynthesis)speechSynthesis.onvoiceschanged=fillVoices;
+  const cv=$('#cvoice');if(cv)cv.onchange=()=>{DB.set.callerVoice=cv.value;save();callScore(180)};
+  const ct=$('#cvtest');if(ct)ct.onclick=()=>callScore(180);
   bindOnlineSetup();bindRoster();
   $('#startbtn').onclick=()=>{
     readRoster();const R=L.roster;
@@ -1091,7 +1113,7 @@ function renderSetup(){
 function startMatch(game,pl,opts,input){
   opts=Object.assign({},opts,{seed:Math.floor(Math.random()*1e9)});
   MATCH={id:uid(),game,opts,players:pl.map(p=>Object.assign({id:p.id,name:p.name},p.bot?{bot:p.bot}:{},p.members?{members:p.members.map(m=>Object.assign({id:m.id,name:m.name},m.bot?{bot:m.bot}:{}))}:{})),turns:[],input,saved:false,date:new Date().toISOString(),online:!!(ONLINE.open&&ONLINE.guestId&&pl.some(p=>p.id===ONLINE.guestId))};
-  ST=runMatch(MATCH);MULT=1;
+  ST=runMatch(MATCH);MULT=1;if(!MATCH.turns.length&&callerOn()&&!BULL.called)setTimeout(()=>callerSay([{t:'Game on!',rate:0.8,pitch:0.9}]),400);BULL.called=false;
   if(input==='cam'){startAllCams().then(async()=>{if(!activeCams().length&&CAMRT.some(r=>r.stream)){toast('Camera\'s kalibreren…');await autoCalAll()}resetRefs();DET.active=true;renderGame()});}
   renderGame();
 }
@@ -1103,7 +1125,7 @@ function addDart(d){
   if(!t||t.closed){t={darts:[],closed:false};MATCH.turns.push(t)}
   else if(ST.done){t.closed=true;afterClose();t={darts:[],closed:false};MATCH.turns.push(t)}
   t.darts.push(d);refresh();fxDart(d);
-  if(ST.msg==='Bust'){say('Bust');callout('Bust','bust')}
+  if(ST.msg==='Bust'){say('Bust');callout('Bust','bust');if(callerOn()&&MATCH.game==='x01')callScore(0)}
   else if(ST.msg&&ST.msg!=='Game shot')callout(ST.msg,'high');
 }
 function nextTurn(fromBot){
@@ -1114,6 +1136,7 @@ function nextTurn(fromBot){
 function afterClose(){
   // stem: X01-beurtscore
   const before=ST; fxTurn(before); if(MATCH.game==='x01'&&!before.bust){if(before.leg)say('Game shot');else say(String(before.sc));}
+  if(callerOn()){if(MATCH.game==='x01'){if(before.bust)callScore(0);else if(before.leg)callGameShot(before.over?'match':before.setWon?'set':'leg');else{callScore(before.sc);CALLREQ=true}}else if(MATCH.game==='countup')callScore(before.tpts)}
 }
 function undo(){
   if(!MATCH||MATCH.saved)return;if(isBotTurn()){toast('De DartBot gooit nu');return}let t=curTurn();
@@ -1121,7 +1144,9 @@ function undo(){
   if(!t)return;t.closed=false;t.darts.pop();if(!t.darts.length)MATCH.turns.pop();
   refresh();
 }
-function refresh(){ST=runMatch(MATCH);if(ST.over)finishMatch();renderGame()}
+let CALLREQ=false;
+function refresh(){ST=runMatch(MATCH);if(ST.over)finishMatch();renderGame();
+  if(CALLREQ){CALLREQ=false;if(MATCH&&MATCH.game==='x01'&&!ST.over&&!ST.tdarts.length){const p=ST.players[ST.cur];const a=actor();if(p.in&&p.score<=170&&checkout(p.score,3,ST.o.out))setTimeout(()=>callRequire(a?a.name:'',p.score),1700)}}}
 function finishMatch(){
   if(MATCH.saved)return;const G=GAMES[MATCH.game];
   const rec={id:MATCH.id,date:MATCH.date,game:MATCH.game,opts:MATCH.opts,
@@ -1130,7 +1155,7 @@ function finishMatch(){
     hits:ST.darts.map(d=>[d.p,d.n,d.m,Math.round((d.x??0)*10)/10,Math.round((d.y??0)*10)/10]),
     turns:MATCH.turns.map(t=>t.darts.map(d=>[d.n,d.m]))};
   DB.matches.push(rec);save();MATCH.saved=true;DET.active=false;onlineSync(true);
-  say((ST.winner!=null?MATCH.players[ST.winner].name+' wint':'Einde spel'));
+  say((ST.winner!=null?MATCH.players[ST.winner].name+' wint':'Einde spel'));if(callerOn()&&MATCH.game!=='x01'&&ST.winner!=null)callerSay([{t:'Game shot!',rate:0.8},{t:MATCH.players[ST.winner].name+' wins the match!',rate:0.88}]);
   showResult(rec);
 }
 function showResult(rec){
