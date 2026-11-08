@@ -160,6 +160,20 @@ table.t th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppe
 .route{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;min-height:48px}
 .rchip{padding:4px 16px;border-radius:99px;border:2px solid var(--gold);color:var(--gold);font-family:var(--f-display);font-weight:800;font-size:26px;animation:pop .3s ease-out}
 .rchip:first-child{background:var(--gold);color:#fff}
+.cobar{display:flex;align-items:center;gap:10px;background:var(--panel);border:2px solid var(--accent);border-radius:18px;padding:8px 12px;box-shadow:0 10px 26px rgba(242,90,44,.18);animation:coin .35s ease}
+.cobar.setup{border-color:#e0a21b;box-shadow:0 10px 26px rgba(224,162,27,.18)}
+@keyframes coin{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+.colab{display:flex;flex-direction:column;align-items:center;line-height:1;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-right:10px;border-right:1px solid var(--line)}
+.colab b{font-family:var(--f-display);font-size:34px;color:var(--text);letter-spacing:0}
+.cobar.setup .colab{color:#b77d00}
+.cod{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,3.6vh,40px);line-height:1;padding:8px 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);min-width:84px;text-align:center}
+.cod.dbl{border-color:var(--green);color:var(--green)}
+.cod.now{background:var(--accent);border-color:var(--accent);color:#fff;animation:copulse 1.4s ease-in-out infinite}
+.cobar.setup .cod.now{background:#e0a21b;border-color:#e0a21b}
+.cod.done{font-size:18px;padding:6px 10px;min-width:0;opacity:.5}
+@keyframes copulse{0%,100%{box-shadow:0 0 0 0 rgba(242,90,44,.45)}50%{box-shadow:0 0 0 8px rgba(242,90,44,0)}}
+.coleave{font-size:15px;color:var(--muted);max-width:180px;line-height:1.25}
+.coleave b{color:var(--text);font-size:18px}
 .rtext{font-family:var(--f-display);font-weight:600;font-size:26px;letter-spacing:.02em}
 .callout{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .callout span{font-family:var(--f-display);font-weight:800;font-size:clamp(80px,13vw,170px);line-height:1;color:#fff;text-shadow:0 6px 40px rgba(0,0,0,.9);animation:call 1.4s ease-out forwards}
@@ -490,6 +504,22 @@ function oneDart(rem,out){
 const THROWS=(()=>{const a=[];for(let n=20;n>=1;n--)a.push({n,m:3});a.push({n:25,m:2});for(let n=20;n>=1;n--)a.push({n,m:1});a.push({n:25,m:1});for(let n=20;n>=1;n--)a.push({n,m:2});return a})();
 const DPREF=[20,16,8,10,18,12,4,14,6,2,19,17,15,13,11,9,7,5,3,1,25];
 const COMEMO={};
+// uitgooiplan voor de speler aan de beurt (X01): finish met de resterende pijlen, of anders de beste 'setup' voor de volgende beurt
+const DFAV=[32,40,16,24,36,20,8,12,28,4];
+function leaveScore(r,out){if(r<0)return -999;if(out!=='straight'&&r<2)return -999;if(r===0)return 200;
+  if(out!=='straight'){const fi=DFAV.indexOf(r);if(fi>=0)return 100-fi*2;if(r<=40&&r%2===0)return 75;if(r===50)return 60}else if(r<=20||r===25||r===50)return 90;
+  if(checkout(r,2,out))return 55-Math.min(15,Math.floor(r/10));if(r<=170&&checkout(r,3,out))return 30-Math.floor(r/20);return 10-r/100}
+function coPlan(st){if(MATCH.game!=='x01'||st.done||st.over)return null;const p=st.players[st.cur],o=st.o;if(!p.in)return null;const left=3-st.td,rem=p.score,out=o.out;
+  if(rem>(out==='straight'?180:170))return null;
+  const fin=checkout(rem,left,out);if(fin)return {kind:'finish',rem,darts:fin,left};
+  // geen finish meer met deze pijlen: zet een goede finish klaar voor de volgende beurt (veilig: liever enkel dan triple)
+  let best=null;for(const tg of THROWS){if(tg.n===25&&tg.m===2&&rem>60)continue;const v=val(tg);const r=rem-v;let s=leaveScore(r,out);if(s<=-999)continue;
+    if(tg.m===3)s-=6;if(tg.m===2)s-=3;// risico
+    if(left>1)s+=v*0.15*(left-1);// met meer pijlen over: eerst scoren
+    // wat als je mist (enkel van hetzelfde getal)? dat mag niet busten
+    if(tg.m>1){const rm=rem-tg.n;if(leaveScore(rm,out)<=-999)s-=40}
+    if(!best||s>best.s)best={s,tg,leave:r}}
+  return best?{kind:'setup',rem,t:best.tg,leave:best.leave,left}:null}
 function checkout(rem,darts,out){
   if(darts<1||rem<1) return null;
   const key=rem+'|'+darts+'|'+out; if(key in COMEMO) return COMEMO[key];
@@ -963,7 +993,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1600';
+const APPV='1610';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -976,7 +1006,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 16:00</div>
+   <div class="small muted">Versie 8 nov 16:10</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1506,8 +1536,12 @@ function updateGame(G){
   const r=$('#route');
   if(ST.over)r.innerHTML='';
   else if(ST.done)r.innerHTML=`<span class="rtext">${MATCH.input==='cam'?'Pijlen eruit halen':'Volgende beurt'}</span>`;
-  else{const h=G.sugg?'':(G.hint(ST)||'');r.innerHTML=h?`<span class="rtext">${esc(h)}</span>`:''}
-  const svg=$('#gboard');$('.hl',svg).innerHTML=ST.over||ST.done?'':hlPaths(G.targets(ST));
+  else{const plan=MATCH.game==='x01'&&!isGuestTurn()?coPlan(ST):null;
+    if(plan){const done=ST.tdarts.map(d=>`<span class="cod done">${lbl(d)}</span>`).join('');
+      r.innerHTML=plan.kind==='finish'?`<div class="cobar"><span class="colab">Uitgooien<b>${plan.rem}</b></span>${done}${plan.darts.map((d,k)=>`<span class="cod ${k===0?'now':''} ${d.m===2||(d.n===25&&d.m===2)?'dbl':''}">${lbl(d)}</span>`).join('')}</div>`
+        :`<div class="cobar setup"><span class="colab">Geen finish<b>${plan.rem}</b></span>${done}<span class="cod now">${lbl(plan.t)}</span><span class="coleave">laat <b>${plan.leave}</b> staan voor je volgende beurt</span></div>`}
+    else{const h=G.sugg?'':(G.hint(ST)||'');r.innerHTML=h?`<span class="rtext">${esc(h)}</span>`:''}}
+  const svg=$('#gboard');{const plan=MATCH.game==='x01'?coPlan(ST):null;const tg=plan?[plan.kind==='finish'?plan.darts[0]:plan.t]:G.targets(ST);$('.hl',svg).innerHTML=ST.over||ST.done?'':hlPaths(tg)}
   $('.marks',svg).innerHTML=ST.tdarts.map((d,k)=>d.m||d.x!=null?`<g><circle cx="${d.x??0}" cy="${-(d.y??0)}" r="7" fill="#f25a2c" stroke="#fff" stroke-width="2.5"/><text x="${d.x??0}" y="${-(d.y??0)}" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="#fff">${k+1}</text></g>`:'').join('');
   const nb=$('#next');nb.disabled=!curTurn()||curTurn().closed||!curTurn().darts.length||ST.over;nb.classList.toggle('ready',ST.done&&!ST.over);
   const ct=$('#camtoggle'),k=activeCams().length;ct.innerHTML=`<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 7h3l2-2h6l2 2h3v12H4z" fill="currentColor"/><circle cx="12" cy="13" r="3.5" fill="var(--bg)"/></svg> ${MATCH.input==='cam'?k:'uit'}`;
