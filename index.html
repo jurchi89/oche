@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="oche.webmanifest"><link rel="icon" href="oche-icon.svg"><meta name="theme-color" content="#e4efec"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Oche Darts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Barlow:wght@400;500;600;700&display=swap">
@@ -462,6 +463,50 @@ main:has(#groot){max-width:none;padding-block:10px}
   .big{font-size:64px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ---------- telefoon: spelen zonder laptop (bijv. je maat alleen) ---------- */
+@media (max-width:760px){
+ body:has(#groot) header{display:none}
+ body:has(#groot) main{padding:8px 10px}
+ #groot{height:calc(100dvh - 16px)!important;overflow:hidden!important;gap:8px!important}
+ #groot .mtop{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px}
+ #groot .mleft{flex-direction:row;align-items:center;gap:8px;flex:1 1 auto;min-width:0}
+ #groot .mchips span{font-size:12px;padding:2px 8px}
+ #groot .camst,#groot .mright{display:none}
+ #groot .mmid{order:3;width:100%}
+ #groot .turnbar{width:100%;min-height:56px;border-radius:14px}
+ #groot .tb-darts{grid-template-columns:repeat(3,1fr);padding:0 6px;flex:1}
+ #groot .tbs b{font-size:26px}
+ #groot .tbs em{font-size:21px;padding:2px 7px;border-radius:9px}
+ #groot .tbs svg{width:42px;height:12px}
+ #groot .tb-sum{font-size:34px;min-width:74px;padding:0 10px}
+ .mrow.onescreen{display:flex!important;flex-direction:column;flex:1;min-height:0;gap:8px}
+ .mrow.onescreen .mcenter{display:none!important}
+ .mrow.onescreen .plist{flex-direction:row!important;flex-wrap:nowrap!important;flex:none!important;gap:0;border-radius:14px;overflow:hidden;max-height:none}
+ .mrow.onescreen .plist .pc{flex:1 1 0!important;min-width:0;min-height:0!important}
+ .mrow.onescreen .plist .pc-in{padding:8px 10px!important;gap:2px!important}
+ .mrow.onescreen .plist .pc .big{font-size:46px!important}
+ .mrow.onescreen .plist .pc-name .av{width:26px;height:26px;font-size:14px}
+ .mrow.onescreen .plist .pc-name .nm{font-size:15px}
+ .mrow.onescreen .plist .pc-name .tag{display:none}
+ .mrow.onescreen .plist .co,.mrow.onescreen .plist .ownv,#gpanelwrap{display:none!important}
+ .mrow.onescreen .plist .legs{font-size:13px;padding:1px 6px}
+ .mrow.onescreen .plist .pc-stats{grid-template-columns:1fr!important;padding-top:4px!important;margin-top:4px}
+ .mrow.onescreen .plist .pc-stats div:not(:first-child){display:none}
+ .mrow.onescreen .plist .pc-stats div{flex-direction:row!important;justify-content:space-between!important;align-items:baseline!important}
+ .mrow.onescreen .plist .pc-stats b{font-size:18px}
+ .mrow.onescreen .plist .pc.on::after{border-left-width:20px;border-top-width:13px;border-bottom-width:13px;right:8px;top:9px}
+ .mrow.onescreen .inpanel{flex:1;min-height:0;padding:8px;border-radius:14px}
+ .inpanel .keys{grid-auto-rows:1fr!important}
+}
+@media (max-width:760px){
+ #startbtn{position:sticky;bottom:10px;z-index:20;box-shadow:0 10px 26px rgba(242,90,44,.35)}
+ .games{grid-template-columns:1fr 1fr!important;gap:8px!important}
+ .gcard{grid-template-columns:1fr!important;min-height:0!important;padding:12px 12px 12px 16px!important}
+ .gcard b{font-size:20px!important}
+ .gcard span{display:none}
+ .gcard svg.mini{display:none}
+ .gcat .sub{display:none}
+}
 </style>
 </head>
 <body>
@@ -1010,7 +1055,7 @@ function callGameShot(kind){if(!callerOn())return;crowd(kind==='match'?2:1);if(p
 
 // ---------- Online tegen een maat (PeerJS) ----------
 const GUEST_URL=DB.set.guestUrl||'';
-const APPV='1700';
+const APPV='1710';
 const ONLINE={lastSeen:0,peer:null,conn:null,open:false,code:'',guestName:'',guestId:null,remote:null,lastSent:''};
 function isGuestTurn(){return !!(MATCH&&(MATCH.online||(ONLINE.guestId&&MATCH.players.some(p=>p.id===ONLINE.guestId)))&&ST&&!ST.over&&MATCH.players[ST.cur]&&MATCH.players[ST.cur].id===ONLINE.guestId)}
 function loadPeer(){return new Promise((res,rej)=>{if(window.Peer)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';sc.onload=()=>res();sc.onerror=()=>rej(new Error('PeerJS laden mislukt (geen internet?)'));document.head.appendChild(sc)})}
@@ -1023,7 +1068,7 @@ function onlineSetupHTML(){
    <div class="opts"><label class="f">Bordcamera die je maat ziet<select id="sharecam">${[0,1,2].map(i=>`<option value="${i}" ${(DB.set.shareCam??0)===i?'selected':''}>Camera ${i+1}</option>`).join('')}</select></label>
    <label class="f">Bordbeeld voor je maat<select id="bview"><option value="multi" ${(DB.set.boardView||'multi')==='multi'?'selected':''}>Recht van voren, scherpst (alle camera's)</option><option value="front" ${DB.set.boardView==='front'?'selected':''}>Recht van voren, één camera</option><option value="raw" ${DB.set.boardView==='raw'?'selected':''}>Origineel camerabeeld</option></select></label>
    <label class="f">Jezelf in beeld<select id="facecam"><option value="">Uit</option>${faceOptions()}</select></label></div>
-   <div class="small muted">Versie 8 nov 17:00</div>
+   <div class="small muted">Versie 8 nov 17:10</div>
    <div class="small muted">${ONLINE.open?'Kies een spel en klik op Start. Je maat is automatisch speler 2. Als jij gooit, ziet hij jouw bord groot op zijn telefoon.':'Laat deze pagina open tot je maat verbonden is. Kies de camera vóór hij verbindt.'}</div>
    <div class="row">${DEMOM.on?'<button class="btn" id="democlose">Proefspel sluiten</button>':'<button class="btn" id="demomate">Proefspel: maat zonder camera</button><button class="btn" id="demomatecam">Proefspel: maat met camera</button>'}<button class="btn danger" id="closeroom">Online stoppen</button></div>
    <div class="small muted">Proefspel opent de telefoonpagina van je maat hiernaast als nep-maat "Testmaat" (met of zonder een nep-camera die zijn bord filmt). Start daarna een spel: je ziet beide schermen tegelijk en kunt voor hem scores intikken.</div>`;
@@ -1328,7 +1373,7 @@ function renderSetup(){
       <details class="small"><summary><b>Eigen caller-opnames</b>: spreek zelf de echte tv-roep in</summary><div class="stack" style="margin-top:8px">${CLIPS.map(([k,l])=>`<div class="row"><span style="min-width:170px">${l}</span><button class="btn" data-rec="${k}">${clipUrl(k)?'Opnieuw opnemen':'Opnemen'}</button>${clipUrl(k)?`<button class="btn" data-play="${k}">▶</button><button class="btn danger" data-del="${k}">×</button>`:''}</div>`).join('')}<span class="muted">Max. 5 seconden per opname. Opnames vervangen de computerstem voor dat moment.</span></div></details>`:''}</div>
     <button class="btn primary" id="startbtn" style="padding:14px;font-size:18px">Start ${G.name}</button>
    </div></div>`;
-  $$('.gcard').forEach(b=>b.onclick=()=>{L.game=b.dataset.g;save();renderSetup()});
+  $$('.gcard').forEach(b=>b.onclick=()=>{L.game=b.dataset.g;save();renderSetup();if(innerWidth<=760){const s=document.querySelector('.setup>:last-child');if(s)s.scrollIntoView({behavior:'smooth',block:'start'})}});
   $$('[data-o]').forEach(s=>s.onchange=()=>{(L.opts[L.game]=L.opts[L.game]||{})[s.dataset.o]=s.value;save()});
   $$('#inmode button').forEach(b=>b.onclick=()=>{L.input=b.dataset.m;save();renderSetup()});
   $('#voicesel').onchange=e=>{const v=e.target.value;DB.set.voice=v!=='off';DB.set.voiceLang=v==='en'?'en':'nl';save();renderSetup();if(v==='en')setTimeout(()=>callScore(180),300)};

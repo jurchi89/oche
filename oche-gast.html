@@ -123,11 +123,14 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
   .pc .big{font-size:34px}.face{width:18vw}
 }
 [hidden]{display:none!important}
+.solo{display:block;margin-top:14px;padding:14px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--fg);text-decoration:none;font-weight:800;font-size:17px}
+.solo::after{content:' →';color:var(--accent)}
+.solo small{display:block;font-weight:500;font-size:13px;color:var(--muted);margin-top:4px}
 </style>
 <link rel="manifest" href="oche-gast.webmanifest">
 </head>
 <body>
-<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 16:30</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
+<div class="top"><div class="brand">OCHE<span>.</span> <span class="muted" style="font-size:16px;letter-spacing:0">gast · 17:10</span></div><span class="chip" id="chip"><i></i><span>Niet verbonden</span></span></div>
 
 <section id="join" class="stack">
   <div class="box stack">
@@ -137,6 +140,7 @@ body.mine .vid.keep{display:block;flex:0 0 22%}
     <label class="small muted" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="usecam" checked> Mijn camera delen (achtercamera op het bord)</label>
     <button class="btn primary" id="go">Verbinden</button>
     <div class="small muted" id="jmsg"></div>
+    <a class="solo" href="./?v=1710">Zelf spelen zonder je maat<small>Alle spellen, tegen de DartBot of met vrienden naast je. Je scores en statistieken blijven op deze telefoon.</small></a>
   </div>
 </section>
 
@@ -238,7 +242,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function blankStream(){const c=document.createElement('canvas');c.width=4;c.height=3;c.getContext('2d').fillRect(0,0,4,3);return c.captureStream(1)}
 $('#selfbtn').onclick=()=>{if(!local){toast('Je deelt geen camera');return}$('#mini').hidden=!$('#mini').hidden};
 $('#fsbtn').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await document.documentElement.requestFullscreen({navigationUI:'hide'});try{await screen.orientation.lock('portrait')}catch(e){}}}catch(e){toast('Volledig scherm: tik op ⋮ en kies "Toevoegen aan startscherm"')}};
-const GVER='1630';
+const GVER='1710';
 const STR={board:null,face:null};let SWAP=false,ROT=0;
 function fitRot(video,deg){const box=video.parentNode;if(!box||!video.videoWidth){video.style.transform=deg?`rotate(${deg}deg)`:'';return}
   const W=box.clientWidth,H=box.clientHeight,a=video.videoWidth/video.videoHeight;let cw=W,ch=W/a;if(ch>H){ch=H;cw=H*a}
@@ -295,7 +299,7 @@ let lastTurnMine=false;
 function onMsg(m){if(!m||typeof m!=='object')return;
   if(m.t==='ping'||m.t==='pong')return;
   if(m.t==='full'){toast('Er speelt al iemand mee bij je maat');return}
-  if(m.t==='bye'){$('#status').textContent='Je maat heeft het online spelen gestopt.';$('#pad').classList.add('locked');return}
+  if(m.t==='bye'){$('#status').innerHTML='Je maat is gestopt. <a href="./">Zelf verder spelen →</a>';$('#pad').classList.add('locked');return}
   if(m.t!=='state')return;S=m;
   if(m.ver&&m.ver>GVER){let done='';try{done=sessionStorage.getItem('oche-upd')||''}catch(e){}if(done!==m.ver){try{sessionStorage.setItem('oche-upd',m.ver)}catch(e){}toast('Nieuwe versie laden…');setTimeout(()=>location.replace(location.pathname+'?v='+m.ver+(DEMO?'&demo='+new URLSearchParams(location.search).get('demo'):'')+'#'+CODE),600);return}}
   if(m.idle){ownViews(true,false);document.body.classList.add('ingame');document.body.classList.remove('mine');$('#status').textContent='Wacht op start door '+(m.host||'je maat');$('#status').className='status';$('#cards').innerHTML=`<div class="pc"><div class="nm">${esc(m.host||'Je maat')}</div><div class="big">–</div><div class="sub">&nbsp;</div></div><div class="pc"><div class="nm">${esc(myName)} (jij)</div><div class="big">–</div><div class="sub">&nbsp;</div></div>`;$('#pad').classList.add('locked');return}
